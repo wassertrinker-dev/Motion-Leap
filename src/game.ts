@@ -11,6 +11,8 @@ class Game {
 
     startButton: HTMLButtonElement;
 
+    video: HTMLVideoElement;
+
     enemies: Enemy[];       // Ein "Container" (Array) für alle Gegner
     enemyTimer: number;     // Ein Zähler, der hochzählt
     enemyInterval: number;  // Die Zeit, nach der ein neuer Gegner erscheint
@@ -24,6 +26,8 @@ class Game {
         
         // NEU: Den Start-Button aus dem HTML holen
         this.startButton = document.getElementById('startButton') as HTMLButtonElement;
+
+        this.video = document.getElementById('videoFeed') as HTMLVideoElement;
 
         this.gameWidth = 800;
         this.gameHeight = 600;
@@ -56,22 +60,30 @@ class Game {
     }
 
 
-    startGame() {
-        // Verstecke den Button
-        this.startButton.style.display = 'none';
-        // Zeige die Canvas an
-        this.canvas.style.display = 'block';
+    async startGame() {
+        try {
+            // NEU: Fordere den Kamerazugriff an
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            this.video.srcObject = stream;
 
-        this.lives = 3; // Starte mit 3 Leben
-        this.isGameOver = false;
-        this.enemies = []; // Leere die Gegnerliste vom vorherigen Spiel
-        this.enemyTimer = 0;
-        // Optional: Spielerposition zurücksetzen
-        this.player.y = 0;
-        this.player.velocityY = 0;
-        
-        // Starte die Spiel-Schleife
-        this.gameLoop(0);
+            // Erst wenn der Zugriff erfolgreich war, starte das Spiel
+            this.startButton.style.display = 'none';
+            this.canvas.style.display = 'block';
+            
+            this.lives = 3;
+            this.isGameOver = false;
+            this.enemies = [];
+            this.enemyTimer = 0;
+            this.player.y = 0;
+            this.player.velocityY = 0;
+            
+            this.gameLoop(0);
+
+        } catch (error) {
+            // NEU: Fehlerbehandlung, falls der Nutzer ablehnt oder keine Kamera hat
+            console.error('Kamerazugriff verweigert oder fehlgeschlagen:', error);
+            alert('Ohne Kamerazugriff kann das Spiel nicht gestartet werden.');
+        }
     }
     
      update(deltaTime: number) { // <<-- NIMMT JETZT 'deltaTime' AN
@@ -124,6 +136,8 @@ class Game {
 
     draw() {
         this.ctx.clearRect(0, 0, this.gameWidth, this.gameHeight);
+        this.ctx.drawImage(this.video, 0, 0, this.gameWidth, this.gameHeight);
+        
         this.player.draw(this.ctx);
 
          // Malt jeden Gegner, der sich aktuell im 'enemies'-Array befindet

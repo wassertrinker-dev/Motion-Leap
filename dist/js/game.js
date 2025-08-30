@@ -1,3 +1,12 @@
+var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
+    return new (P || (P = Promise))(function (resolve, reject) {
+        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
+        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
+        step((generator = generator.apply(thisArg, _arguments || [])).next());
+    });
+};
 import { Player } from './player.js';
 import { Enemy } from './enemy.js';
 class Game {
@@ -7,6 +16,7 @@ class Game {
         this.ctx = this.canvas.getContext('2d');
         // NEU: Den Start-Button aus dem HTML holen
         this.startButton = document.getElementById('startButton');
+        this.video = document.getElementById('videoFeed');
         this.gameWidth = 800;
         this.gameHeight = 600;
         this.canvas.width = this.gameWidth;
@@ -32,19 +42,28 @@ class Game {
         });
     }
     startGame() {
-        // Verstecke den Button
-        this.startButton.style.display = 'none';
-        // Zeige die Canvas an
-        this.canvas.style.display = 'block';
-        this.lives = 3; // Starte mit 3 Leben
-        this.isGameOver = false;
-        this.enemies = []; // Leere die Gegnerliste vom vorherigen Spiel
-        this.enemyTimer = 0;
-        // Optional: Spielerposition zurücksetzen
-        this.player.y = 0;
-        this.player.velocityY = 0;
-        // Starte die Spiel-Schleife
-        this.gameLoop(0);
+        return __awaiter(this, void 0, void 0, function* () {
+            try {
+                // NEU: Fordere den Kamerazugriff an
+                const stream = yield navigator.mediaDevices.getUserMedia({ video: true });
+                this.video.srcObject = stream;
+                // Erst wenn der Zugriff erfolgreich war, starte das Spiel
+                this.startButton.style.display = 'none';
+                this.canvas.style.display = 'block';
+                this.lives = 3;
+                this.isGameOver = false;
+                this.enemies = [];
+                this.enemyTimer = 0;
+                this.player.y = 0;
+                this.player.velocityY = 0;
+                this.gameLoop(0);
+            }
+            catch (error) {
+                // NEU: Fehlerbehandlung, falls der Nutzer ablehnt oder keine Kamera hat
+                console.error('Kamerazugriff verweigert oder fehlgeschlagen:', error);
+                alert('Ohne Kamerazugriff kann das Spiel nicht gestartet werden.');
+            }
+        });
     }
     update(deltaTime) {
         if (this.isGameOver) {
@@ -83,6 +102,7 @@ class Game {
     }
     draw() {
         this.ctx.clearRect(0, 0, this.gameWidth, this.gameHeight);
+        this.ctx.drawImage(this.video, 0, 0, this.gameWidth, this.gameHeight);
         this.player.draw(this.ctx);
         // Malt jeden Gegner, der sich aktuell im 'enemies'-Array befindet
         this.enemies.forEach(enemy => {
