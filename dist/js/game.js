@@ -15,6 +15,8 @@ class Game {
         this.enemies = []; // Startet als leere Liste
         this.enemyTimer = 0; // Der Zähler startet bei 0
         this.enemyInterval = 2000; // 2000ms = 2 Sekunden
+        this.lives = 0;
+        this.isGameOver = false;
         // Wir binden die startGame Methode, damit 'this' korrekt funktioniert
         this.startGame = this.startGame.bind(this);
         // Wir fügen den Event Listener zum Button hinzu
@@ -34,10 +36,20 @@ class Game {
         this.startButton.style.display = 'none';
         // Zeige die Canvas an
         this.canvas.style.display = 'block';
+        this.lives = 3; // Starte mit 3 Leben
+        this.isGameOver = false;
+        this.enemies = []; // Leere die Gegnerliste vom vorherigen Spiel
+        this.enemyTimer = 0;
+        // Optional: Spielerposition zurücksetzen
+        this.player.y = 0;
+        this.player.velocityY = 0;
         // Starte die Spiel-Schleife
         this.gameLoop(0);
     }
     update(deltaTime) {
+        if (this.isGameOver) {
+            return; // Stoppt die Ausführung dieser Methode
+        }
         this.player.update(this.gameHeight);
         // 1. Gegner erzeugen, wenn die Zeit abgelaufen ist
         if (this.enemyTimer > this.enemyInterval) {
@@ -51,6 +63,21 @@ class Game {
         this.enemies.forEach(enemy => {
             enemy.update();
         });
+        this.enemies.forEach((enemy, index) => {
+            // AABB-Kollisionserkennung (Axis-Aligned Bounding Box)
+            if (this.player.x < enemy.x + enemy.width &&
+                this.player.x + this.player.width > enemy.x &&
+                this.player.y < enemy.y + enemy.height &&
+                this.player.y + this.player.height > enemy.y) {
+                // Kollision erkannt!
+                this.enemies.splice(index, 1); // Entferne den Gegner, um Mehrfach-Treffer zu vermeiden
+                this.lives--; // Reduziere die Leben
+                // Prüfe auf Game Over
+                if (this.lives <= 0) {
+                    this.isGameOver = true;
+                }
+            }
+        });
         // 3. Alle Gegner aus dem Array entfernen, die links aus dem Bild sind
         this.enemies = this.enemies.filter(enemy => enemy.x + enemy.width > 0);
     }
@@ -61,6 +88,19 @@ class Game {
         this.enemies.forEach(enemy => {
             enemy.draw(this.ctx);
         });
+        this.drawUI();
+    }
+    drawUI() {
+        // Lebensanzeige
+        this.ctx.fillStyle = 'black';
+        this.ctx.font = '30px Arial';
+        this.ctx.fillText(`Leben: ${this.lives}`, 20, 40);
+        // Game-Over-Anzeige
+        if (this.isGameOver) {
+            this.ctx.textAlign = 'center';
+            this.ctx.font = '60px Arial';
+            this.ctx.fillText('Game Over', this.gameWidth / 2, this.gameHeight / 2);
+        }
     }
     gameLoop(timestamp) {
         const deltaTime = timestamp - this.lastTime;
