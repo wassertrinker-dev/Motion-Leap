@@ -49,7 +49,7 @@ class Game {
                 yield this.setupPoseDetection();
                 this.startButton.style.display = 'none';
                 this.canvas.style.display = 'block';
-                this.lives = 3;
+                this.lives = 3000000;
                 this.isGameOver = false;
                 this.enemies = [];
                 this.enemyTimer = 0;
@@ -147,6 +147,7 @@ class Game {
     }
     updateLog() {
         const fps = (1000 / (this.lastTime - (this.prevTime || this.lastTime))).toFixed(1);
+        console.log("updateLog wird aufgerufen!");
         const logText = `
 -- JUMP DETECTION --
 Movement:       ${this.lastJumpMovement.toFixed(2)}
@@ -162,15 +163,18 @@ Enemies:        ${this.enemies.length}
 Game Over:      ${this.isGameOver}
 FPS:            ${fps}
         `;
+        console.log(logText);
         // Schreibe den formatierten Text in das HTML-Element
         this.logElement.innerText = logText;
     }
     gameLoop(timestamp) {
+        this.prevTime = this.lastTime;
         const deltaTime = timestamp - this.lastTime;
         this.lastTime = timestamp;
         this.detectJump();
         this.update(deltaTime);
         this.draw();
+        this.updateLog();
         requestAnimationFrame(this.gameLoop.bind(this));
     }
 }
