@@ -1,0 +1,12 @@
+{
+  "compilerOptions": {
+    "target": "es6",          // Erzeuge modernes JavaScript (ES6)
+    "module": "es2020",        // Erlaube 'import'/'export' im Browser-Stil
+    "rootDir": "./src",       // HIER IST DER SCHLÜSSEL: Sag tsc, dass dein Code im 'src'-Ordner beginnt
+    "outDir": "./dist/js",    // Lege die fertigen .js-Dateien hier ab
+    "moduleResolution": "node"
+  },
+  "include": [
+    "src/**/*"                // Sag tsc, dass er alle .ts Dateien im 'src'-Ordner kompilieren soll
+  ]
+}

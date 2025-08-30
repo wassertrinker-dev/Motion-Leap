@@ -1,0 +1,5 @@
+# Ignoriere den Ordner mit den kompilierten JavaScript-Dateien
+dist/js/
+
+# Ignoriere den Ordner mit den Node.js-Abhängigkeiten (sehr wichtig!)
+node_modules/
