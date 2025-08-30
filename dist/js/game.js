@@ -13,8 +13,10 @@ import { Enemy } from './enemy.js';
 class Game {
     constructor() {
         this.lastTime = 0;
+        this.prevTime = 0;
         this.lastShoulderY = null;
         this.JUMP_SENSITIVITY = 10;
+        this.lastJumpMovement = 0; // Speichert den letzten Bewegungswert für die Anzeige
         // Dieser Code ist korrekt und greift auf die oben deklarierten Eigenschaften zu
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
@@ -32,6 +34,7 @@ class Game {
         this.isGameOver = false;
         this.startGame = this.startGame.bind(this);
         this.startButton.addEventListener('click', this.startGame);
+        this.logElement = document.getElementById('log-output');
         this.setupInput();
     }
     setupInput() {
@@ -81,6 +84,7 @@ class Game {
                     const currentShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
                     if (this.lastShoulderY !== null) {
                         const movement = this.lastShoulderY - currentShoulderY;
+                        this.lastJumpMovement = movement;
                         if (movement > this.JUMP_SENSITIVITY) {
                             console.log('Sprung erkannt!');
                             this.player.jump();
@@ -140,6 +144,26 @@ class Game {
             this.ctx.font = '60px Arial';
             this.ctx.fillText('Game Over', this.gameWidth / 2, this.gameHeight / 2);
         }
+    }
+    updateLog() {
+        const fps = (1000 / (this.lastTime - (this.prevTime || this.lastTime))).toFixed(1);
+        const logText = `
+-- JUMP DETECTION --
+Movement:       ${this.lastJumpMovement.toFixed(2)}
+Sensitivity:    ${this.JUMP_SENSITIVITY}
+
+-- PLAYER STATE --
+Y Position:     ${this.player.y.toFixed(2)}
+Y Velocity:     ${this.player.velocityY.toFixed(2)}
+
+-- GAME STATE --
+Lives:          ${this.lives}
+Enemies:        ${this.enemies.length}
+Game Over:      ${this.isGameOver}
+FPS:            ${fps}
+        `;
+        // Schreibe den formatierten Text in das HTML-Element
+        this.logElement.innerText = logText;
     }
     gameLoop(timestamp) {
         const deltaTime = timestamp - this.lastTime;

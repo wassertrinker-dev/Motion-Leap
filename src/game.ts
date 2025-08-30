@@ -27,11 +27,15 @@ class Game {
     enemyTimer: number;
     enemyInterval: number;
     lastTime: number = 0;
+    prevTime: number = 0;
 
     // Eigenschaften für die Posenerkennung
     poseDetector: any;
     lastShoulderY: number | null = null;
     JUMP_SENSITIVITY: number = 10;
+
+    logElement: HTMLElement;
+    lastJumpMovement: number = 0; // Speichert den letzten Bewegungswert für die Anzeige
 
     constructor() {
         // Dieser Code ist korrekt und greift auf die oben deklarierten Eigenschaften zu
@@ -57,6 +61,9 @@ class Game {
         this.startGame = this.startGame.bind(this);
         this.startButton.addEventListener('click', this.startGame);
         
+        this.logElement = document.getElementById('log-output')!;
+
+
         this.setupInput();
     }
     
@@ -113,7 +120,7 @@ class Game {
 
                 if (this.lastShoulderY !== null) {
                     const movement = this.lastShoulderY - currentShoulderY;
-                    
+                    this.lastJumpMovement = movement;
                     if (movement > this.JUMP_SENSITIVITY) {
                         console.log('Sprung erkannt!');
                         this.player.jump();
@@ -127,6 +134,8 @@ class Game {
     addEnemy() {
         this.enemies.push(new Enemy(this.gameWidth, this.gameHeight));
     }
+
+    
 
     update(deltaTime: number) {
         if (this.isGameOver) return;
@@ -184,6 +193,29 @@ class Game {
             this.ctx.font = '60px Arial';
             this.ctx.fillText('Game Over', this.gameWidth / 2, this.gameHeight / 2);
         }
+    }
+
+    updateLog() {
+        const fps = (1000 / (this.lastTime - (this.prevTime || this.lastTime))).toFixed(1);
+
+        const logText = `
+-- JUMP DETECTION --
+Movement:       ${this.lastJumpMovement.toFixed(2)}
+Sensitivity:    ${this.JUMP_SENSITIVITY}
+
+-- PLAYER STATE --
+Y Position:     ${this.player.y.toFixed(2)}
+Y Velocity:     ${this.player.velocityY.toFixed(2)}
+
+-- GAME STATE --
+Lives:          ${this.lives}
+Enemies:        ${this.enemies.length}
+Game Over:      ${this.isGameOver}
+FPS:            ${fps}
+        `;
+
+        // Schreibe den formatierten Text in das HTML-Element
+        this.logElement.innerText = logText;
     }
 
     gameLoop(timestamp: number) {
