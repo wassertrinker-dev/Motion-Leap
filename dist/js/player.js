@@ -1,35 +1,54 @@
-// KEINE IMPORT-ZEILE HIER!
+// in /src/player.ts
+/**
+ * Repräsentiert die vom Spieler gesteuerte Figur.
+ * Diese Klasse kümmert sich um die eigene Position, die Physik (Schwerkraft, Sprung)
+ * und das Zeichnen der Figur auf die Canvas.
+ */
 export class Player {
+    /**
+     * Erstellt eine neue Spieler-Instanz.
+     * @param gameWidth Die Gesamtbreite des Spielfelds. (Wird derzeit nicht verwendet, aber für zukünftige Logik beibehalten).
+     * @param gameHeight Die Gesamthöhe des Spielfelds, wichtig für die Bodenkollision in `update`.
+     */
     constructor(gameWidth, gameHeight) {
         this.width = 50;
         this.height = 50;
         this.x = 50;
-        this.y = 0;
+        this.y = 0; // Startet am oberen Rand
         this.color = 'red';
         this.velocityY = 0;
         this.gravity = 0.5;
     }
+    /**
+     * Zeichnet den Spieler als rotes Rechteck an seiner aktuellen Position auf die Canvas.
+     * @param context Der 2D-Rendering-Kontext der Canvas, auf den gezeichnet werden soll.
+     */
     draw(context) {
         context.fillStyle = this.color;
         context.fillRect(this.x, this.y, this.width, this.height);
     }
+    /**
+     * Aktualisiert den Zustand des Spielers für den nächsten Frame.
+     * Diese Methode wendet die Schwerkraft an und prüft auf eine Kollision mit dem Boden.
+     * @param gameHeight Die Höhe des Spielfelds, um die Position des Bodens zu kennen.
+     */
     update(gameHeight) {
         this.velocityY += this.gravity;
         this.y += this.velocityY;
-        // Überprüfe, ob der Spieler den Boden berührt
+        // Verhindert, dass der Spieler durch den Boden fällt.
         if (this.y + this.height > gameHeight) {
-            // Setze die Position genau auf den Boden
             this.y = gameHeight - this.height;
-            // Stoppe die Fallbewegung
             this.velocityY = 0;
         }
     }
+    /**
+     * Wendet einen sofortigen vertikalen Impuls auf den Spieler an, um einen Sprung zu simulieren.
+     * Funktioniert nur, wenn der Spieler sich am Boden befindet (erkennbar an `velocityY === 0`).
+     * Dadurch werden Doppelsprünge in der Luft verhindert.
+     */
     jump() {
-        // Wir erlauben einen Sprung nur, wenn der Spieler am Boden ist.
-        // Ein Indikator dafür ist, dass seine vertikale Geschwindigkeit 0 ist.
         if (this.velocityY === 0) {
-            this.velocityY = -20; // Das ist die Sprunghöhe. Ein negativer Wert bedeutet "nach oben".
-            // Spiel mit diesem Wert, um die Sprunghöhe anzupassen!
+            this.velocityY = -20;
         }
     }
 }
