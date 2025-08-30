@@ -3,3 +3,6 @@ dist/js/
 
 # Ignoriere den Ordner mit den Node.js-Abhängigkeiten (sehr wichtig!)
 node_modules/
+
+# Ignoriere den Ordner mit der generierten Dokumentation
+docs/

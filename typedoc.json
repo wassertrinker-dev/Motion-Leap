@@ -1,7 +1,9 @@
 {
   "$schema": "https://typedoc.org/schema.json",
   "entryPoints": [
-     "./src"
+    "./src/game.ts",
+    "./src/player.ts",
+    "./src/enemy.ts"
   ],
   "entryPointStrategy": "expand",
   "out": "docs",
