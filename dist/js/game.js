@@ -1,3 +1,4 @@
+// in /src/game.ts
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -12,42 +13,37 @@ import { Enemy } from './enemy.js';
 class Game {
     constructor() {
         this.lastTime = 0;
+        this.lastShoulderY = null;
+        this.JUMP_SENSITIVITY = 10;
+        // Dieser Code ist korrekt und greift auf die oben deklarierten Eigenschaften zu
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
-        // NEU: Den Start-Button aus dem HTML holen
         this.startButton = document.getElementById('startButton');
-        this.video = document.getElementById('videoFeed');
         this.gameWidth = 800;
         this.gameHeight = 600;
         this.canvas.width = this.gameWidth;
         this.canvas.height = this.gameHeight;
         this.player = new Player(this.gameWidth, this.gameHeight);
-        this.enemies = []; // Startet als leere Liste
-        this.enemyTimer = 0; // Der Zähler startet bei 0
-        this.enemyInterval = 2000; // 2000ms = 2 Sekunden
+        this.video = document.getElementById('videoFeed');
+        this.enemies = [];
+        this.enemyTimer = 0;
+        this.enemyInterval = 2000;
         this.lives = 0;
         this.isGameOver = false;
-        // Wir binden die startGame Methode, damit 'this' korrekt funktioniert
         this.startGame = this.startGame.bind(this);
-        // Wir fügen den Event Listener zum Button hinzu
         this.startButton.addEventListener('click', this.startGame);
         this.setupInput();
     }
     setupInput() {
-        window.addEventListener('keydown', (event) => {
-            // Wir prüfen, ob die gedrückte Taste die Leertaste ist
-            if (event.code === 'Space') {
-                this.player.jump();
-            }
-        });
+        // Ist jetzt leer, wir steuern nicht mehr per Tastatur
     }
     startGame() {
         return __awaiter(this, void 0, void 0, function* () {
             try {
-                // NEU: Fordere den Kamerazugriff an
                 const stream = yield navigator.mediaDevices.getUserMedia({ video: true });
                 this.video.srcObject = stream;
-                // Erst wenn der Zugriff erfolgreich war, starte das Spiel
+                yield new Promise((resolve) => { this.video.onloadedmetadata = resolve; });
+                yield this.setupPoseDetection();
                 this.startButton.style.display = 'none';
                 this.canvas.style.display = 'block';
                 this.lives = 3;
@@ -59,63 +55,86 @@ class Game {
                 this.gameLoop(0);
             }
             catch (error) {
-                // NEU: Fehlerbehandlung, falls der Nutzer ablehnt oder keine Kamera hat
-                console.error('Kamerazugriff verweigert oder fehlgeschlagen:', error);
+                console.error('Fehler beim Starten des Spiels oder der Kamera:', error);
                 alert('Ohne Kamerazugriff kann das Spiel nicht gestartet werden.');
             }
         });
     }
+    setupPoseDetection() {
+        return __awaiter(this, void 0, void 0, function* () {
+            yield tf.ready();
+            const model = poseDetection.SupportedModels.MoveNet;
+            this.poseDetector = yield poseDetection.createDetector(model);
+            console.log('Posen-Modell geladen.');
+        });
+    }
+    detectJump() {
+        return __awaiter(this, void 0, void 0, function* () {
+            if (!this.poseDetector)
+                return;
+            const poses = yield this.poseDetector.estimatePoses(this.video);
+            if (poses && poses.length > 0) {
+                const keypoints = poses[0].keypoints;
+                const leftShoulder = keypoints.find(p => p.name === 'left_shoulder');
+                const rightShoulder = keypoints.find(p => p.name === 'right_shoulder');
+                if (leftShoulder && rightShoulder && leftShoulder.score > 0.5 && rightShoulder.score > 0.5) {
+                    const currentShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+                    if (this.lastShoulderY !== null) {
+                        const movement = this.lastShoulderY - currentShoulderY;
+                        if (movement > this.JUMP_SENSITIVITY) {
+                            console.log('Sprung erkannt!');
+                            this.player.jump();
+                        }
+                    }
+                    this.lastShoulderY = currentShoulderY;
+                }
+            }
+        });
+    }
+    addEnemy() {
+        this.enemies.push(new Enemy(this.gameWidth, this.gameHeight));
+    }
     update(deltaTime) {
-        if (this.isGameOver) {
-            return; // Stoppt die Ausführung dieser Methode
-        }
+        if (this.isGameOver)
+            return;
         this.player.update(this.gameHeight);
-        // 1. Gegner erzeugen, wenn die Zeit abgelaufen ist
         if (this.enemyTimer > this.enemyInterval) {
-            this.enemies.push(new Enemy(this.gameWidth, this.gameHeight));
-            this.enemyTimer = 0; // Timer zurücksetzen
+            this.addEnemy();
+            this.enemyTimer = 0;
         }
         else {
-            this.enemyTimer += deltaTime; // Zeit seit letztem Frame aufaddieren
+            this.enemyTimer += deltaTime;
         }
-        // 2. Alle Gegner, die in unserem Array sind, bewegen
         this.enemies.forEach(enemy => {
             enemy.update();
         });
         this.enemies.forEach((enemy, index) => {
-            // AABB-Kollisionserkennung (Axis-Aligned Bounding Box)
             if (this.player.x < enemy.x + enemy.width &&
                 this.player.x + this.player.width > enemy.x &&
                 this.player.y < enemy.y + enemy.height &&
                 this.player.y + this.player.height > enemy.y) {
-                // Kollision erkannt!
-                this.enemies.splice(index, 1); // Entferne den Gegner, um Mehrfach-Treffer zu vermeiden
-                this.lives--; // Reduziere die Leben
-                // Prüfe auf Game Over
+                this.enemies.splice(index, 1);
+                this.lives--;
                 if (this.lives <= 0) {
                     this.isGameOver = true;
                 }
             }
         });
-        // 3. Alle Gegner aus dem Array entfernen, die links aus dem Bild sind
         this.enemies = this.enemies.filter(enemy => enemy.x + enemy.width > 0);
     }
     draw() {
         this.ctx.clearRect(0, 0, this.gameWidth, this.gameHeight);
         this.ctx.drawImage(this.video, 0, 0, this.gameWidth, this.gameHeight);
         this.player.draw(this.ctx);
-        // Malt jeden Gegner, der sich aktuell im 'enemies'-Array befindet
         this.enemies.forEach(enemy => {
             enemy.draw(this.ctx);
         });
         this.drawUI();
     }
     drawUI() {
-        // Lebensanzeige
         this.ctx.fillStyle = 'black';
         this.ctx.font = '30px Arial';
         this.ctx.fillText(`Leben: ${this.lives}`, 20, 40);
-        // Game-Over-Anzeige
         if (this.isGameOver) {
             this.ctx.textAlign = 'center';
             this.ctx.font = '60px Arial';
@@ -125,7 +144,8 @@ class Game {
     gameLoop(timestamp) {
         const deltaTime = timestamp - this.lastTime;
         this.lastTime = timestamp;
-        this.update(deltaTime); // <<-- WIR GEBEN 'deltaTime' AN UPDATE WEITER
+        this.detectJump();
+        this.update(deltaTime);
         this.draw();
         requestAnimationFrame(this.gameLoop.bind(this));
     }
