@@ -5,72 +5,138 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Camera Jump 'n' Run</title>
 
+    <!-- TensorFlow.js Bibliotheken -->
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-core"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-backend-webgl"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs-converter"></script>
     <script src="https://cdn.jsdelivr.net/npm/@tensorflow-models/pose-detection"></script>
 
     <style>
-         body { 
-        margin: 0; 
-        overflow: hidden;
-        display: flex;
-        justify-content: center;
-        align-items: center;
-        min-height: 100vh;
-        background-color: #f0f0f0;
-    }
-    canvas { 
-        border: 2px solid black;
-        display: none; 
-    }
-    /* NEU: Styling für unseren Button */
-    #startButton {
-        padding: 15px 30px;
-        font-size: 24px;
-        cursor: pointer;
-        border: 2px solid black;
-        background-color: white;
-    }
+        /* Grundlegende Seiten-Stile */
+        body { 
+            margin: 0; 
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            background-color: #f0f0f0; /* Standard-Hintergrundfarbe */
+            font-family: sans-serif;
+        }
 
-    #videoFeed {
-        display: none;
-    }
+        /* Das Spielfeld (Canvas) */
+        canvas { 
+            border: 2px solid black;
+            display: none; /* Wird von JS auf 'block' gesetzt, wenn das Spiel startet */
+        }
 
+        /* ----- Themenauswahl ----- */
+        #theme-selection {
+            text-align: center;
+            padding: 20px;
+            background-color: white;
+            border: 2px solid black;
+            border-radius: 10px;
+        }
+
+        .theme-choice-container {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 15px;
+        }
+
+        .theme-choice {
+            border: 3px solid black;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+
+        .theme-choice img {
+            width: 100px;
+            height: 100px;
+            object-fit: contain;
+        }
+
+        .theme-choice:hover {
+            transform: scale(1.05);
+            box-shadow: 0 0 15px rgba(0,0,0,0.5);
+        }
+
+        /* Der Start-Button */
+        #startButton {
+            padding: 15px 30px;
+            font-size: 24px;
+            cursor: pointer;
+            border: 2px solid black;
+            background-color: white;
+            display: none; /* Wird von JS gesteuert */
+        }
+
+        /* ----- Log-Fenster ----- */
         #log-container {
-        position: fixed; /* Pinned das Fenster an den Bildschirmrand */
-        top: 10px;
-        left: 10px;
-        width: 300px;
-        height: 250px;
-        background-color: rgba(255, 255, 255, 0.8); /* Weiß mit 80% Deckkraft */
-        border: 1px solid black;
-        padding: 10px;
-        font-family: monospace; /* Eine Schriftart, die sich gut für Code/Logs eignet */
-        overflow-y: scroll; /* Fügt eine Scrollbar hinzu, falls der Text zu lang wird */
-        z-index: 100; /* Stellt sicher, dass das Fenster über allem anderen liegt */
-    }
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            width: 300px;
+            height: 250px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: 1px solid black;
+            padding: 10px;
+            font-family: monospace;
+            overflow-y: scroll;
+            z-index: 100; /* Stellt sicher, dass es über dem Canvas liegt */
+        }
 
-    #log-container h2 {
-        margin: 0 0 10px 0;
-        font-size: 16px;
-    }
+        #log-container h2 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+        }
 
-    #log-output {
-        margin: 0;
-        font-size: 12px;
-    }
-
+        #log-output {
+            margin: 0;
+            font-size: 12px;
+            white-space: pre-wrap; /* Sorgt für korrekte Zeilenumbrüche */
+        }
     </style>
 </head>
 <body>
+    
+    <!-- Log-Fenster -->
     <div id="log-container">
         <h2>Debug Log</h2>
         <pre id="log-output"></pre>
     </div>
+    
+    <!-- Themenauswahl -->
+    <div id="theme-selection">
+        <h2>Wähle deinen Stil:</h2>
+        <div class="theme-choice-container">
+            <!-- Märchen-Option -->
+            <div class="theme-choice" data-theme="maerchen">
+                <img src="assets/princess_stand.png" alt="Märchenheldin">
+                <h3>Märchen</h3>
+            </div>
+            <!-- Ninja-Option -->
+            <div class="theme-choice" data-theme="ninja">
+                <img src="assets/ninja_stand.png" alt="Ninjaheld">
+                <h3>Ninja</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Start-Button -->
     <button id="startButton">Spiel starten</button>
+
+    <!-- Unsichtbares Video-Element für den Kamerazugriff -->
     <video id="videoFeed" autoplay playsinline style="display: none;"></video>
+
+    <!-- Das Spielfeld -->
     <canvas id="gameCanvas"></canvas>
+    
+    <!-- Lade unser kompiliertes Spiel-Skript -->
     <script type="module" src="js/game.js"></script>
 
 </body>
