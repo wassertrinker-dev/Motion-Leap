@@ -99,7 +99,7 @@ export class Game {
             // 3. Spielzustand zurücksetzen und UI anpassen
             this.startButton.style.display = 'none';
             this.canvas.style.display = 'block';
-            this.lives = 3;
+            this.lives = 30000;
             this.isGameOver = false;
             this.enemies = [];
             this.enemyTimer = 0;

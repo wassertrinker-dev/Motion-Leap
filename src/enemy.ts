@@ -1,53 +1,61 @@
+// in /src/enemy.ts
 
 /**
  * Repräsentiert einen feindlichen Gegner, der sich als Hindernis über den Bildschirm bewegt.
- * Jede Instanz dieser Klasse verwaltet ihre eigene Position, ihr Aussehen und ihre Bewegung.
  */
 export class Enemy {
-    /** Die horizontale Position (linke Kante) des Gegners. */
     x: number;
-    /** Die vertikale Position (obere Kante) des Gegners. */
     y: number;
-    /** Die Breite des Gegners in Pixel. */
     width: number;
-    /** Die Höhe des Gegners in Pixel. */
     height: number;
-    /** Die Farbe, in der der Gegner gezeichnet wird. */
-    color: string;
-    /** Die Geschwindigkeit in Pixel pro Frame, mit der sich der Gegner von rechts nach links bewegt. */
     speed: number;
+    
+    // ÄNDERUNG: Wir brauchen keine 'color' mehr. Stattdessen fügen wir Eigenschaften für das Bild hinzu.
+    image: HTMLImageElement;
+    isImageLoaded: boolean = false; // Wichtiger Schalter, um Fehler zu vermeiden
 
     /**
      * Erstellt eine neue Gegner-Instanz.
-     * Der Gegner wird standardmäßig direkt außerhalb des rechten Bildschirmrands und am Boden platziert.
-     * @param gameWidth Die Gesamtbreite des Spielfelds, um die Startposition festzulegen.
-     * @param gameHeight Die Gesamthöhe des Spielfelds, um die Position am Boden zu berechnen.
+     * @param gameWidth Die Gesamtbreite des Spielfelds.
+     * @param gameHeight Die Gesamthöhe des Spielfelds.
      */
     constructor(gameWidth: number, gameHeight: number) {
-        this.width = 50;
-        this.height = 80;
-        this.color = 'blue';
+        // Passe diese Werte an die Proportionen deines Bildes an
+        this.width = 60;
+        this.height = 100;
         this.speed = 4;
 
-        this.x = gameWidth; // Startet direkt außerhalb des rechten Rands
-        this.y = gameHeight - this.height; // Startet am Boden
+        this.x = gameWidth;
+        this.y = gameHeight - this.height;
+
+        // NEU: Der Ladevorgang für das Bild
+        this.image = new Image(); // Erstellt ein leeres Bild-Objekt im Speicher
+        
+        // Dieser Code wird ausgeführt, SOBALD das Bild fertig geladen ist
+        this.image.onload = () => {
+            this.isImageLoaded = true;
+        };
+        
+        // DIESE Zeile startet den Ladevorgang. Der Pfad ist relativ zur index.html!
+        this.image.src = 'asset/brickwall.png';
     }
 
     /**
-     * Zeichnet den Gegner als blaues Rechteck an seiner aktuellen Position.
-     * @param context Der 2D-Rendering-Kontext der Canvas, auf den gezeichnet werden soll.
+     * Zeichnet das Mauer-Bild an seiner aktuellen Position.
+     * @param context Der 2D-Rendering-Kontext der Canvas.
      */
     draw(context: CanvasRenderingContext2D) {
-        context.fillStyle = this.color;
-        context.fillRect(this.x, this.y, this.width, this.height);
+        // ÄNDERUNG: Wir ersetzen das Malen des Rechtecks durch das Malen des Bildes.
+        // Wir prüfen vorher, ob das Bild schon geladen ist, um Fehler zu vermeiden.
+        if (this.isImageLoaded) {
+            context.drawImage(this.image, this.x, this.y, this.width, this.height);
+        }
     }
 
     /**
-     * Aktualisiert den Zustand des Gegners für den nächsten Frame.
-     * Die Hauptaufgabe dieser Methode ist es, den Gegner nach links zu bewegen.
+     * Aktualisiert die Position des Gegners für den nächsten Frame.
      */
     update() {
-        // Verringert die x-Position, um eine Bewegung von rechts nach links zu erzeugen.
         this.x -= this.speed;
     }
 }
