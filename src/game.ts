@@ -41,6 +41,11 @@ export class Game {
     JUMP_SENSITIVITY: number = 10;
     lastJumpMovement: number = 0;
     
+    loadingOverlay!: HTMLElement;
+    progressBar!: HTMLElement;
+    progressText!: HTMLElement;
+
+
     constructor() {
         this.enemies = []; // Diese können wir hier schon initialisieren
         window.onload = () => this.init();
@@ -54,6 +59,11 @@ export class Game {
         this.logElement = document.getElementById('log-output')!;
         this.themeSelectionContainer = document.getElementById('theme-selection')!;
         
+        // NEU: Hole die Ladebalken-Elemente
+        this.loadingOverlay = document.getElementById('loading-overlay')!;
+        this.progressBar = document.getElementById('progress-bar')!;
+        this.progressText = document.getElementById('progress-text')!;
+
         this.gameWidth = 800;
         this.gameHeight = 600;
         this.canvas.width = this.gameWidth;
@@ -69,6 +79,8 @@ export class Game {
 
         this.setupThemeSelection();
         this.startButton.addEventListener('click', this.startGame);
+
+
     }
 
     setupThemeSelection() {
@@ -88,6 +100,13 @@ export class Game {
 
     // HIER SIND DIE FEHLENDEN METHODEN
     async startGame() {
+
+         // Zeige den Lade-Bildschirm an
+        this.loadingOverlay.style.display = 'flex';
+        // Setze den Balken auf 0% zurück, falls man das Spiel neustartet
+        this.progressBar.style.width = '0%';
+        this.progressText.innerText = '0%';
+
         try {
             const stream = await navigator.mediaDevices.getUserMedia({ video: true });
             this.video.srcObject = stream;
@@ -96,6 +115,7 @@ export class Game {
             await this.setupPoseDetection();
 
             this.canvas.style.display = 'block';
+            this.startButton.style.display = 'none';
             
             this.lives = 3;
             this.isGameOver = false;
@@ -111,13 +131,27 @@ export class Game {
         } catch (error) {
             console.error('Fehler beim Starten des Spiels oder der Kamera:', error);
             alert('Ohne Kamerazugriff kann das Spiel nicht gestartet werden.');
+        } finally {
+            // Verstecke den Lade-Bildschirm, egal was passiert
+            this.loadingOverlay.style.display = 'none';
         }
     }
     
     async setupPoseDetection() {
         await tf.ready();
         const model = poseDetection.SupportedModels.MoveNet;
-        this.poseDetector = await poseDetection.createDetector(model);
+
+        // ÄNDERUNG: Wir fügen ein Konfigurationsobjekt mit dem onProgress-Callback hinzu
+        this.poseDetector = await poseDetection.createDetector(model, { 
+            onProgress: (fraction) => {
+                // Diese Funktion wird wiederholt während des Downloads aufgerufen
+                const percent = Math.floor(fraction * 100);
+
+                // Aktualisiere die UI des Ladebalkens
+                this.progressBar.style.width = `${percent}%`;
+                this.progressText.innerText = `${percent}%`;
+            }
+        });
         console.log('Posen-Modell geladen.');
     }
 
