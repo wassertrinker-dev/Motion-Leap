@@ -11,7 +11,16 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { Player } from './player.js';
 import { Enemy } from './enemy.js';
 import { themes } from './themes.js';
+/**
+ * Die Hauptklasse, die das gesamte Spiel orchestriert.
+ * Verwaltet die Spiel-Schleife, den Zustand, alle Spielobjekte, das Rendering und die Kamera-Eingabe.
+ */
 export class Game {
+    /**
+     * Erstellt die Haupt-Spielinstanz.
+     * Der Constructor ist schlank und delegiert die Initialisierung an die `init()`-Methode,
+     * die erst nach dem vollständigen Laden der Seite aufgerufen wird.
+     */
     constructor() {
         // Spiel-Objekte
         this.player = null;
@@ -20,10 +29,15 @@ export class Game {
         this.prevTime = 0;
         this.lastShoulderY = null;
         this.JUMP_SENSITIVITY = 10;
+        // Logging
         this.lastJumpMovement = 0;
-        this.enemies = []; // Diese können wir hier schon initialisieren
+        this.enemies = [];
         window.onload = () => this.init();
     }
+    /**
+     * Initialisiert das Spiel, nachdem die HTML-Seite vollständig geladen ist.
+     * Holt alle HTML-Elemente, setzt Dimensionen und richtet Event-Listener ein.
+     */
     init() {
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
@@ -31,7 +45,6 @@ export class Game {
         this.video = document.getElementById('videoFeed');
         this.logElement = document.getElementById('log-output');
         this.themeSelectionContainer = document.getElementById('theme-selection');
-        // NEU: Hole die Ladebalken-Elemente
         this.loadingOverlay = document.getElementById('loading-overlay');
         this.progressBar = document.getElementById('progress-bar');
         this.progressText = document.getElementById('progress-text');
@@ -39,7 +52,6 @@ export class Game {
         this.gameHeight = 600;
         this.canvas.width = this.gameWidth;
         this.canvas.height = this.gameHeight;
-        // Initialisiere den Rest hier
         this.enemyTimer = 0;
         this.enemyInterval = 2000;
         this.lives = 0;
@@ -48,6 +60,9 @@ export class Game {
         this.setupThemeSelection();
         this.startButton.addEventListener('click', this.startGame);
     }
+    /**
+     * Richtet die Event-Listener für die klickbaren Themen-Karten ein.
+     */
     setupThemeSelection() {
         document.querySelectorAll('.theme-choice').forEach(card => {
             card.addEventListener('click', (event) => {
@@ -57,18 +72,18 @@ export class Game {
                     document.body.style.backgroundColor = this.selectedTheme.backgroundColor;
                     this.themeSelectionContainer.style.display = 'none';
                     this.startButton.style.display = 'block';
-                    //this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerImageSrc); //sd
                     this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerAnimations);
                 }
             });
         });
     }
-    // HIER SIND DIE FEHLENDEN METHODEN
+    /**
+     * Behandelt den asynchronen Startprozess des Spiels nach dem Klick auf "Start".
+     * Zeigt den Ladebildschirm an, fordert Kamerazugriff an, lädt KI-Modelle und startet die Spiel-Schleife.
+     */
     startGame() {
         return __awaiter(this, void 0, void 0, function* () {
-            // Zeige den Lade-Bildschirm an
             this.loadingOverlay.style.display = 'flex';
-            // Setze den Balken auf 0% zurück, falls man das Spiel neustartet
             this.progressBar.style.width = '0%';
             this.progressText.innerText = '0%';
             try {
@@ -78,7 +93,7 @@ export class Game {
                 yield this.setupPoseDetection();
                 this.canvas.style.display = 'block';
                 this.startButton.style.display = 'none';
-                this.lives = 300000;
+                this.lives = 300000; // Hoher Wert zum Testen
                 this.isGameOver = false;
                 this.enemies = [];
                 this.enemyTimer = 0;
@@ -93,21 +108,21 @@ export class Game {
                 alert('Ohne Kamerazugriff kann das Spiel nicht gestartet werden.');
             }
             finally {
-                // Verstecke den Lade-Bildschirm, egal was passiert
                 this.loadingOverlay.style.display = 'none';
             }
         });
     }
+    /**
+     * Lädt und konfiguriert das MoveNet-Modell für die Posenerkennung.
+     * Aktualisiert dabei den Ladebalken.
+     */
     setupPoseDetection() {
         return __awaiter(this, void 0, void 0, function* () {
             yield tf.ready();
             const model = poseDetection.SupportedModels.MoveNet;
-            // ÄNDERUNG: Wir fügen ein Konfigurationsobjekt mit dem onProgress-Callback hinzu
             this.poseDetector = yield poseDetection.createDetector(model, {
                 onProgress: (fraction) => {
-                    // Diese Funktion wird wiederholt während des Downloads aufgerufen
                     const percent = Math.floor(fraction * 100);
-                    // Aktualisiere die UI des Ladebalkens
                     this.progressBar.style.width = `${percent}%`;
                     this.progressText.innerText = `${percent}%`;
                 }
@@ -115,6 +130,9 @@ export class Game {
             console.log('Posen-Modell geladen.');
         });
     }
+    /**
+     * Analysiert das Kamerabild in jedem Frame, um eine Sprungbewegung zu erkennen.
+     */
     detectJump() {
         return __awaiter(this, void 0, void 0, function* () {
             if (!this.poseDetector || this.video.paused || this.video.ended)
@@ -138,15 +156,19 @@ export class Game {
             }
         });
     }
+    /** Erstellt eine neue Gegner-Instanz basierend auf dem gewählten Thema. */
     addEnemy() {
         if (this.selectedTheme) {
             this.enemies.push(new Enemy(this.gameWidth, this.gameHeight, this.selectedTheme.enemyImageSrc));
         }
     }
+    /**
+     * Aktualisiert den gesamten Spielzustand für den nächsten Frame.
+     * @param deltaTime Die Zeit in Millisekunden seit dem letzten Frame.
+     */
     update(deltaTime) {
         if (this.isGameOver || !this.player)
             return;
-        //this.player.update(this.gameHeight);
         this.player.update(deltaTime, this.gameHeight);
         if (this.enemyTimer > this.enemyInterval) {
             this.addEnemy();
@@ -171,6 +193,9 @@ export class Game {
         });
         this.enemies = this.enemies.filter(enemy => enemy.x + enemy.width > 0);
     }
+    /**
+     * Zeichnet den gesamten Spielzustand auf die Canvas.
+     */
     draw() {
         this.ctx.clearRect(0, 0, this.gameWidth, this.gameHeight);
         this.ctx.drawImage(this.video, 0, 0, this.gameWidth, this.gameHeight);
@@ -180,6 +205,7 @@ export class Game {
         this.enemies.forEach(enemy => enemy.draw(this.ctx));
         this.drawUI();
     }
+    /** Zeichnet die Benutzeroberfläche (Leben, Game Over) über das Spielgeschehen. */
     drawUI() {
         this.ctx.fillStyle = 'black';
         this.ctx.font = '30px Arial';
@@ -191,31 +217,33 @@ export class Game {
             this.ctx.fillText('Game Over', this.gameWidth / 2, this.gameHeight / 2);
         }
     }
+    /** Aktualisiert den Inhalt des Debug-Log-Fensters mit Echtzeit-Daten. */
     updateLog() {
         if (!this.player)
             return;
         const fps = (1000 / (this.lastTime - this.prevTime)).toFixed(1);
         const logText = `
-    -- JUMP DETECTION --
-    Movement:       ${this.lastJumpMovement.toFixed(2)}
-    Sensitivity:    ${this.JUMP_SENSITIVITY}
-
-    -- PLAYER STATE --
-    Y Position:     ${this.player.y.toFixed(2)}
-    Y Velocity:     ${this.player.velocityY.toFixed(2)}
-    State:          ${this.player.currentState}  
-
-    -- ANIMATION --
-    Frame:          ${this.player.frameX} / ${this.player.maxFrame - 1} 
-
-    -- GAME STATE --
-    Lives:          ${this.lives}
-    Enemies:        ${this.enemies.length}
-    Game Over:      ${this.isGameOver}
-    FPS:            ${fps}
-            `;
+-- JUMP DETECTION --
+Movement:       ${this.lastJumpMovement.toFixed(2)}
+Sensitivity:    ${this.JUMP_SENSITIVITY}
+-- PLAYER STATE --
+State:          ${this.player.currentState}
+Y Position:     ${this.player.y.toFixed(2)}
+Y Velocity:     ${this.player.velocityY.toFixed(2)}
+-- ANIMATION --
+Frame:          ${this.player.frameX} / ${this.player.maxFrame - 1}
+-- GAME STATE --
+Lives:          ${this.lives}
+Enemies:        ${this.enemies.length}
+Game Over:      ${this.isGameOver}
+FPS:            ${fps}
+        `;
         this.logElement.innerText = logText;
     }
+    /**
+     * Die zentrale Spiel-Schleife, die ca. 60 Mal pro Sekunde aufgerufen wird.
+     * @param timestamp Ein hochpräziser Zeitstempel vom Browser.
+     */
     gameLoop(timestamp) {
         this.prevTime = this.lastTime;
         const deltaTime = timestamp - this.lastTime;
@@ -227,5 +255,5 @@ export class Game {
         requestAnimationFrame(this.gameLoop.bind(this));
     }
 }
-// Erstellt die Instanz sofort, aber der wichtige Code läuft erst in `init()` nach window.onload.
+// Erstellt die Spiel-Instanz. Die Initialisierung erfolgt in `init()` nach `window.onload`.
 new Game();

@@ -3,7 +3,8 @@
   "entryPoints": [
     "./src/game.ts",
     "./src/player.ts",
-    "./src/enemy.ts"
+    "./src/enemy.ts",
+    "./src/themes.ts"
   ],
   "entryPointStrategy": "expand",
   "out": "docs",

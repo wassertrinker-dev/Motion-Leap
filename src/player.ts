@@ -1,7 +1,13 @@
 // in /src/player.ts
 import { AnimationAssets } from "./themes.js";
 
+/**
+ * Repräsentiert die vom Spieler gesteuerte Figur mit Zuständen und Animationen.
+ */
 export class Player {
+    // --- EIGENSCHACHAFTEN ---
+
+    // Position & Physik
     x: number;
     y: number;
     width: number;
@@ -9,23 +15,26 @@ export class Player {
     velocityY: number;
     gravity: number;
 
-    // Animationssteuerung
+    // Bild- & Animationssteuerung
     image: HTMLImageElement;
+    isImageLoaded: boolean = false;
     frameX: number = 0;
     maxFrame: number;
     fps: number = 15;
     frameTimer: number = 0;
-    frameInterval: number ;
-
-    // NEU: Die "State Machine"
-    currentState: 'IDLE' | 'JUMPING' | 'FALLING' = 'FALLING'; //start with falling
+    frameInterval: number;
+    
+    // State Machine
+    currentState: 'IDLE' | 'JUMPING' | 'FALLING' = 'FALLING';
     animations: AnimationAssets;
 
-    // Die 'image'-Eigenschaft deklarieren
-    isImageLoaded: boolean = false;
-
-   constructor(gameWidth: number, gameHeight: number, animations: AnimationAssets) {
-        // Die Größe wird vom ersten Sprite-Sheet bestimmt (Annahme: alle sind gleich)
+    /**
+     * Erstellt eine neue Spieler-Instanz.
+     * @param gameWidth Die Gesamtbreite des Spielfelds.
+     * @param gameHeight Die Gesamthöhe des Spielfelds.
+     * @param animations Ein Objekt, das die Pfade und Frame-Anzahlen für alle Animationen enthält.
+     */
+    constructor(gameWidth: number, gameHeight: number, animations: AnimationAssets) {
         this.width = 200;  
         this.height = 200; 
         
@@ -41,16 +50,20 @@ export class Player {
         this.image.onload = () => {
             this.isImageLoaded = true;
         };
-        this.maxFrame = 0; // Wird in setState gesetzt
-        this.setState('FALLING'); // Setze den initialen Zustand und lade das erste Bild
+        this.maxFrame = 0;
+        this.setState('FALLING');
     }
 
+    /**
+     * Zeichnet den aktuellen Frame der Spieler-Animation auf die Canvas.
+     * @param context Der 2D-Rendering-Kontext der Canvas.
+     */
      draw(context: CanvasRenderingContext2D) {
          if (this.isImageLoaded) {
             context.drawImage(
                 this.image,
                 this.frameX * this.width,
-                0,
+                0, // frameY ist 0, da wir separate Sprite Sheets pro Animation haben
                 this.width,
                 this.height,
                 this.x,
@@ -61,13 +74,18 @@ export class Player {
         }
     }
 
+    /**
+     * Aktualisiert die Physik und den Animationszustand des Spielers für den nächsten Frame.
+     * @param deltaTime Die vergangene Zeit seit dem letzten Frame in Millisekunden.
+     * @param gameHeight Die Höhe des Spielfelds für die Bodenkollisionserkennung.
+     */
     update(deltaTime: number, gameHeight: number) {
-        // 1. Physik-Update (unverändert)
+        // 1. Physik aktualisieren
         this.velocityY += this.gravity;
         this.y += this.velocityY;
 
-        // 2. Zustandsübergänge prüfen
-       if (this.y + this.height >= gameHeight && this.velocityY >= 0) {
+        // 2. Zustandsübergänge basierend auf der Physik bestimmen
+        if (this.y + this.height >= gameHeight && this.velocityY >= 0) {
             this.y = gameHeight - this.height;
             this.velocityY = 0;
             this.setState('IDLE');
@@ -77,9 +95,8 @@ export class Player {
             this.setState('JUMPING');
         }
 
-
-        // 3. Animations-Frame-Update
-        if (this.frameTimer > this.frameInterval) {
+        // 3. Den aktuellen Frame der Animation weiterzählen
+        if (this.maxFrame > 0 && this.frameTimer > this.frameInterval) {
             this.frameX = (this.frameX + 1) % this.maxFrame;
             this.frameTimer = 0;
         } else {
@@ -87,19 +104,19 @@ export class Player {
         }
     }
 
-     /**
-     * Setzt einen neuen Zustand und aktualisiert das Sprite Sheet, falls es sich ändert.
-     * @param newState Der neue Zustand ('IDLE', 'JUMPING', oder 'FALLING')
+    /**
+     * Setzt einen neuen Animationszustand für den Spieler.
+     * Lädt das entsprechende Sprite Sheet und setzt die Animation zurück.
+     * @param newState Der neue Zustand ('IDLE', 'JUMPING', oder 'FALLING').
      */
      setState(newState: 'IDLE' | 'JUMPING' | 'FALLING') {
-        // Führe den Code nur aus, wenn sich der Zustand wirklich ändert
-        if (this.currentState === newState) return;
+        if (this.currentState === newState) return; // Verhindert unnötige Resets
 
         this.currentState = newState;
         switch (newState) {
             case 'IDLE':
                  this.image.src = this.animations.jump.src;
-                 this.maxFrame = 1; 
+                 this.maxFrame = 1; // Animation anhalten
                 break;
             case 'JUMPING':
                 this.image.src = this.animations.jump.src;
@@ -110,16 +127,17 @@ export class Player {
                 this.maxFrame = this.animations.fall.frameCount;
                 break;
         }
-        this.frameX = 0; // Setze die Animation bei jedem Zustandswechsel zurück
+        this.frameX = 0; // Animation von vorne starten
     }
 
+    /**
+     * Löst einen Sprung aus, wenn der Spieler am Boden ist.
+     * Setzt die Physik und startet sofort die Sprunganimation.
+     */
     jump() {
-    // Prüfe, ob der Spieler überhaupt springen darf
-    if (this.currentState === 'IDLE') {
-        // Setze die Physik für den Sprung
-        this.velocityY = -20;
-        // ÄNDERUNG: Setze den Animationszustand SOFORT und DIREKT
-        this.setState('JUMPING');
+        if (this.currentState === 'IDLE') {
+            this.velocityY = -20;
+            this.setState('JUMPING');
+        }
     }
-}
 }
