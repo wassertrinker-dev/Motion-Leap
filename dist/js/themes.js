@@ -1,14 +1,24 @@
 // in /src/themes.ts
-// Die Bibliothek unserer verfügbaren Themen.
+/**
+ * Eine Bibliothek, die alle verfügbaren Spiel-Themen enthält.
+ */
 export const themes = {
     'maerchen': {
-        playerImageSrc: 'assets/princess_stand.png',
-        enemyImageSrc: 'assets/brickwall.png', // z.B. eine giftige Blume
-        backgroundColor: '#FFC0CB' // Hellrosa
+        playerAnimations: {
+            idle: { src: 'assets/princess_jump_1s_scaled_spritesheet.png', frameCount: 1 },
+            jump: { src: 'assets/princess_jump_1s_scaled_spritesheet.png', frameCount: 8 },
+            fall: { src: 'assets/princess_fall_1s_scaled_spritesheet.png', frameCount: 17 },
+        },
+        enemyImageSrc: 'assets/brickwall.png',
+        backgroundColor: '#FFC0CB'
     },
     'ninja': {
-        playerImageSrc: 'assets/ninja_stand.png',
+        playerAnimations: {
+            idle: { src: 'assets/ninja_jump_1s_scaled_spritesheet.png', frameCount: 1 },
+            jump: { src: 'assets/ninja_jump_1s_scaled_spritesheet.png', frameCount: 8 },
+            fall: { src: 'assets/ninja_fall_1s_scaled_spritesheet.png', frameCount: 17 },
+        },
         enemyImageSrc: 'assets/brickwall.png',
-        backgroundColor: '#4F4F4F' // Dunkelgrau
+        backgroundColor: '#4F4F4F'
     }
 };

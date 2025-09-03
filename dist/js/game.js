@@ -57,7 +57,8 @@ export class Game {
                     document.body.style.backgroundColor = this.selectedTheme.backgroundColor;
                     this.themeSelectionContainer.style.display = 'none';
                     this.startButton.style.display = 'block';
-                    this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerImageSrc);
+                    //this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerImageSrc); //sd
+                    this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerAnimations);
                 }
             });
         });
@@ -77,7 +78,7 @@ export class Game {
                 yield this.setupPoseDetection();
                 this.canvas.style.display = 'block';
                 this.startButton.style.display = 'none';
-                this.lives = 3;
+                this.lives = 300000;
                 this.isGameOver = false;
                 this.enemies = [];
                 this.enemyTimer = 0;
@@ -145,7 +146,8 @@ export class Game {
     update(deltaTime) {
         if (this.isGameOver || !this.player)
             return;
-        this.player.update(this.gameHeight);
+        //this.player.update(this.gameHeight);
+        this.player.update(deltaTime, this.gameHeight);
         if (this.enemyTimer > this.enemyInterval) {
             this.addEnemy();
             this.enemyTimer = 0;
@@ -194,18 +196,24 @@ export class Game {
             return;
         const fps = (1000 / (this.lastTime - this.prevTime)).toFixed(1);
         const logText = `
--- JUMP DETECTION --
-Movement:       ${this.lastJumpMovement.toFixed(2)}
-Sensitivity:    ${this.JUMP_SENSITIVITY}
--- PLAYER STATE --
-Y Position:     ${this.player.y.toFixed(2)}
-Y Velocity:     ${this.player.velocityY.toFixed(2)}
--- GAME STATE --
-Lives:          ${this.lives}
-Enemies:        ${this.enemies.length}
-Game Over:      ${this.isGameOver}
-FPS:            ${fps}
-        `;
+    -- JUMP DETECTION --
+    Movement:       ${this.lastJumpMovement.toFixed(2)}
+    Sensitivity:    ${this.JUMP_SENSITIVITY}
+
+    -- PLAYER STATE --
+    Y Position:     ${this.player.y.toFixed(2)}
+    Y Velocity:     ${this.player.velocityY.toFixed(2)}
+    State:          ${this.player.currentState}  
+
+    -- ANIMATION --
+    Frame:          ${this.player.frameX} / ${this.player.maxFrame - 1} 
+
+    -- GAME STATE --
+    Lives:          ${this.lives}
+    Enemies:        ${this.enemies.length}
+    Game Over:      ${this.isGameOver}
+    FPS:            ${fps}
+            `;
         this.logElement.innerText = logText;
     }
     gameLoop(timestamp) {
