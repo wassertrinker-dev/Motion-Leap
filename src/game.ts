@@ -194,10 +194,11 @@ export class Game {
 
     /** Erstellt eine neue Gegner-Instanz basierend auf dem gewählten Thema. */
     addEnemy() {
-        if (this.selectedTheme) {
-            this.enemies.push(new Enemy(this.gameWidth, this.gameHeight, this.selectedTheme.enemyImageSrc));
-        }
+    if (this.selectedTheme) {
+        // Wir übergeben jetzt das GANZE asset-Objekt, nicht mehr nur den Bild-Pfad.
+        this.enemies.push(new Enemy(this.gameWidth, this.gameHeight, this.selectedTheme.enemyAsset));
     }
+}
 
     /**
      * Aktualisiert den gesamten Spielzustand für den nächsten Frame.

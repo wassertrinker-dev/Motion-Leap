@@ -1,5 +1,7 @@
 // in /src/enemy.ts
 
+import { EnemyAsset } from './themes.js';
+
 /**
  * Repräsentiert einen feindlichen Gegner, der sich als Hindernis über den Bildschirm bewegt.
  * Jede Instanz dieser Klasse verwaltet ihre eigene Position, ihr Aussehen und ihre Bewegung.
@@ -27,20 +29,26 @@ export class Enemy {
      * @param gameHeight Die Gesamthöhe des Spielfelds, um die Position am Boden zu berechnen.
      * @param imageSrc Der Pfad zur Bilddatei für den Gegner, der vom aktuellen Thema bestimmt wird.
      */
-    constructor(gameWidth: number, gameHeight: number, imageSrc: string) {
-        this.width = 60;
-        this.height = 100;
+    constructor(gameWidth: number, gameHeight: number, asset: EnemyAsset) {
+        this.width = asset.width;
+        this.height = asset.height;
         this.speed = 4;
-
         this.x = gameWidth;
-        this.y = gameHeight - this.height;
+        
+        // HIER IST DIE KORRIGIERTE LOGIK:
+        // 1. Berechne die Position, an der die Kollisionsbox den Boden berührt
+        const groundPosition = gameHeight - this.height;
+        
+        // 2. Subtrahiere den Offset, um die Figur nach oben zu verschieben
+        this.y = groundPosition - (asset.yOffset || 0);
 
         this.image = new Image();
         this.image.onload = () => {
             this.isImageLoaded = true;
         };
-        this.image.src = imageSrc;
+        this.image.src = asset.src;
     }
+
 
     /**
      * Zeichnet das Bild des Gegners an seiner aktuellen Position auf die Canvas.

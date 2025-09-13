@@ -17,7 +17,12 @@ export const themes = {
             jump: { src: 'assets/princess_jump_1s_scaled_spritesheet.png', frameCount: 8 },
             fall: { src: 'assets/princess_fall_1s_scaled_spritesheet.png', frameCount: 17 },
         },
-        enemyImageSrc: 'assets/brickwall.png',
+        enemyAsset: {
+            src: 'assets/ghost_bubble_tr.png', // Der neue Dateiname
+            width: 120, // Die ermittelte Breite des Geistes
+            height: 120, // Die ermittelte Höhe
+            yOffset: 10 // Der ermittelte Offset
+        },
         backgroundColor: '#FFC0CB'
     },
     'ninja': {
@@ -28,7 +33,12 @@ export const themes = {
             jump: { src: 'assets/ninja_jump_1s_scaled_spritesheet.png', frameCount: 8 },
             fall: { src: 'assets/ninja_fall_1s_scaled_spritesheet.png', frameCount: 17 },
         },
-        enemyImageSrc: 'assets/brickwall.png',
+        enemyAsset: {
+            src: 'assets/monk_tra.png', // Der neue Dateiname
+            width: 120, // Die ermittelte Breite des Geistes
+            height: 120, // Die ermittelte Höhe
+            yOffset: 10 // Der ermittelte Offset
+        },
         backgroundColor: '#4F4F4F'
     }
 };
