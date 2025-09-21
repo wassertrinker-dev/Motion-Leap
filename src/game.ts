@@ -38,6 +38,7 @@ export class Game {
 
     // Spielzustand & Timing
     lives!: number;
+    score!: number;
     isGameOver!: boolean;
     selectedTheme: GameTheme | null = null;
     enemyTimer!: number;
@@ -132,6 +133,7 @@ export class Game {
             this.startButton.style.display = 'none';
             
             this.lives = 300000; // Hoher Wert zum Testen
+            this.score = 0;
             this.isGameOver = false;
             this.enemies = [];
             this.enemyTimer = 0;
@@ -253,6 +255,7 @@ export class Game {
         this.ctx.font = '30px Arial';
         this.ctx.textAlign = 'left';
         this.ctx.fillText(`Leben: ${this.lives}`, 20, 40);
+         this.ctx.fillText(`Punktestand: ${this.score}`, 20, 80); // NEU
 
         if (this.isGameOver) {
             this.ctx.textAlign = 'center';
