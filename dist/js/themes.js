@@ -21,7 +21,13 @@ export const themes = {
             src: 'assets/ghost_bubble_tr.png', // Der neue Dateiname
             width: 120, // Die ermittelte Breite des Geistes
             height: 120, // Die ermittelte Höhe
-            yOffset: 10 // Der ermittelte Offset
+            yOffset: 10, // Der ermittelte Offset
+            // NEU: Definiere die Zerstörungs-Animation für dieses Thema
+            destruction: {
+                src: 'assets/ghost_spritesheet.png',
+                frameCount: 6, // WICHTIG: Passe das an dein Sprite Sheet an!
+                size: 150 // Wähle eine gute Größe für die Explosion
+            }
         },
         backgroundColor: '#FFC0CB'
     },
@@ -37,7 +43,13 @@ export const themes = {
             src: 'assets/monk_tra.png', // Der neue Dateiname
             width: 120, // Die ermittelte Breite des Geistes
             height: 120, // Die ermittelte Höhe
-            yOffset: 10 // Der ermittelte Offset
+            yOffset: 10, // Der ermittelte Offset
+            // NEU: Definiere die Zerstörungs-Animation für dieses Thema
+            destruction: {
+                src: 'assets/bird_spritesheet.png',
+                frameCount: 6, // WICHTIG: Passe das an dein Sprite Sheet an!
+                size: 150
+            }
         },
         backgroundColor: '#4F4F4F'
     }

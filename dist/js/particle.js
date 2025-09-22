@@ -1,0 +1,38 @@
+// in /src/particle.ts
+export class Particle {
+    constructor(x, y, imageSrc, frameCount, size) {
+        this.markedForDeletion = false;
+        this.frameX = 0;
+        this.fps = 17;
+        this.frameTimer = 0;
+        this.size = size;
+        this.x = x - this.size / 2;
+        this.y = y - this.size / 2;
+        this.image = new Image();
+        this.image.src = imageSrc;
+        this.maxFrame = frameCount;
+        // BERECHNE frameInterval IM CONSTRUCTOR
+        this.frameInterval = 1000 / this.fps;
+    }
+    update(deltaTime) {
+        this.frameTimer += deltaTime;
+        if (this.frameTimer > this.frameInterval) {
+            this.frameTimer = 0; // Timer sofort zurücksetzen
+            // Prüfen, ob wir noch Frames übrig haben zum Anzeigen
+            if (this.frameX < this.maxFrame - 1) {
+                this.frameX++;
+            }
+            else {
+                // Wenn der letzte Frame erreicht wurde, markieren
+                this.markedForDeletion = true;
+            }
+        }
+    }
+    draw(context) {
+        if (!this.image.complete || this.image.naturalHeight === 0)
+            return; // Sicherheitsabfrage
+        const frameWidth = this.image.width / this.maxFrame;
+        const frameHeight = this.image.height;
+        context.drawImage(this.image, this.frameX * frameWidth, 0, frameWidth, frameHeight, this.x, this.y, this.size, this.size);
+    }
+}

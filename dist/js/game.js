@@ -11,6 +11,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 import { Player } from './player.js';
 import { Enemy } from './enemy.js';
 import { themes } from './themes.js';
+import { Particle } from './particle.js';
 /**
  * Die Hauptklasse, die das gesamte Spiel orchestriert.
  * Verwaltet die Spiel-Schleife, den Zustand, alle Spielobjekte, das Rendering und die Kamera-Eingabe.
@@ -24,6 +25,7 @@ export class Game {
     constructor() {
         // Spiel-Objekte
         this.player = null;
+        this.particles = []; // NEU
         this.selectedTheme = null;
         this.lastTime = 0;
         this.prevTime = 0;
@@ -186,14 +188,37 @@ export class Game {
                 this.player.x + this.player.width > enemy.x &&
                 this.player.y < enemy.y + enemy.height &&
                 this.player.y + this.player.height > enemy.y) {
-                this.enemies.splice(index, 1);
-                this.lives--;
-                if (this.lives <= 0) {
-                    this.isGameOver = true;
+                // Bedingung für einen "Stomp" (Sprung von oben):
+                // 1. Der Spieler muss sich nach unten bewegen (fallen).
+                // 2. Die UNTERKANTE des Spielers im LETZTEN Frame muss ÜBER der OBERKANTE des Gegners gewesen sein.
+                const playerBottomLastFrame = this.player.y + this.player.height - this.player.velocityY;
+                if (this.player.velocityY > 0 && playerBottomLastFrame <= enemy.y) {
+                    // --- ERFOLGREICHER SPRUNG AUF DEN GEGNER ---
+                    this.score += 10; // Gib dem Spieler Punkte
+                    this.player.velocityY = -10; // Gib dem Spieler einen kleinen "Bounce" nach oben
+                    if (this.selectedTheme) {
+                        const destruction = this.selectedTheme.enemyAsset.destruction;
+                        this.particles.push(new Particle(enemy.x + enemy.width / 2, // Zentrum des Gegners
+                        enemy.y + enemy.height / 2, destruction.src, destruction.frameCount, destruction.size));
+                    }
+                    this.enemies.splice(index, 1); // Entferne den besiegten Gegner
+                }
+                else {
+                    this.enemies.splice(index, 1);
+                    this.lives--;
+                    if (this.lives <= 0) {
+                        this.isGameOver = true;
+                    }
                 }
             }
         });
         this.enemies = this.enemies.filter(enemy => enemy.x + enemy.width > 0);
+        this.particles.forEach((particle, index) => {
+            particle.update(deltaTime); // HIER wird die update-Methode des Partikels aufgerufen
+            if (particle.markedForDeletion) {
+                this.particles.splice(index, 1);
+            }
+        });
     }
     /**
      * Zeichnet den gesamten Spielzustand auf die Canvas.
@@ -205,6 +230,9 @@ export class Game {
             this.player.draw(this.ctx);
         }
         this.enemies.forEach(enemy => enemy.draw(this.ctx));
+        this.particles.forEach(particle => {
+            particle.draw(this.ctx);
+        });
         this.drawUI();
     }
     /** Zeichnet die Benutzeroberfläche (Leben, Game Over) über das Spielgeschehen. */
@@ -225,6 +253,16 @@ export class Game {
         if (!this.player)
             return;
         const fps = (1000 / (this.lastTime - this.prevTime)).toFixed(1);
+        let particleInfo = '-- PARTICLES --\n';
+        if (this.particles.length > 0) {
+            const firstParticle = this.particles[0];
+            particleInfo += `Count:          ${this.particles.length}\n`;
+            particleInfo += `Frame:          ${firstParticle.frameX} / ${firstParticle.maxFrame - 1}\n`;
+            particleInfo += `Timer:          ${firstParticle.frameTimer.toFixed(0)} / ${firstParticle.frameInterval.toFixed(0)}\n`;
+        }
+        else {
+            particleInfo += 'Count:          0';
+        }
         const logText = `
 -- JUMP DETECTION --
 Movement:       ${this.lastJumpMovement.toFixed(2)}
@@ -233,6 +271,8 @@ Sensitivity:    ${this.JUMP_SENSITIVITY}
 State:          ${this.player.currentState}
 Y Position:     ${this.player.y.toFixed(2)}
 Y Velocity:     ${this.player.velocityY.toFixed(2)}
+-- particle -- 
+${particleInfo} // Füge die neuen Partikel-Infos hier ein
 -- ANIMATION --
 Frame:          ${this.player.frameX} / ${this.player.maxFrame - 1}
 -- GAME STATE --
