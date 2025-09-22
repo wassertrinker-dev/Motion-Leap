@@ -33,6 +33,9 @@ export class Game {
         this.JUMP_SENSITIVITY = 10;
         // Logging
         this.lastJumpMovement = 0;
+        //  Eigenschaften für den Screen Shake
+        this.shakeDuration = 0; // Wie lange der Shake noch andauert (in ms)
+        this.shakeMagnitude = 5; // Wie stark die Verschiebung ist (in Pixel)
         this.enemies = [];
         window.onload = () => this.init();
     }
@@ -171,6 +174,12 @@ export class Game {
      * @param deltaTime Die Zeit in Millisekunden seit dem letzten Frame.
      */
     update(deltaTime) {
+        // NEU: Shake-Timer herunterzählen
+        if (this.shakeDuration > 0) {
+            this.shakeDuration -= deltaTime;
+        }
+        if (this.isGameOver || !this.player)
+            return;
         if (this.isGameOver || !this.player)
             return;
         this.player.update(deltaTime, this.gameHeight);
@@ -209,6 +218,7 @@ export class Game {
                     if (this.lives <= 0) {
                         this.isGameOver = true;
                     }
+                    this.triggerShake(200); // Shake für 200 Millisekunden
                 }
             }
         });
@@ -224,16 +234,26 @@ export class Game {
      * Zeichnet den gesamten Spielzustand auf die Canvas.
      */
     draw() {
+        // 1. ZUERST die Leinwand komplett säubern.
         this.ctx.clearRect(0, 0, this.gameWidth, this.gameHeight);
+        // 2. JETZT den unverschobenen Zustand speichern.
+        this.ctx.save();
+        // 3. Wenn nötig, die Verschiebung für den Shake anwenden.
+        if (this.shakeDuration > 0) {
+            const shakeX = (Math.random() - 0.5) * 2 * this.shakeMagnitude;
+            const shakeY = (Math.random() - 0.5) * 2 * this.shakeMagnitude;
+            this.ctx.translate(shakeX, shakeY);
+        }
+        // 4. Jetzt den gesamten Spielinhalt auf die (möglicherweise verschobene) Leinwand malen.
         this.ctx.drawImage(this.video, 0, 0, this.gameWidth, this.gameHeight);
+        this.enemies.forEach(enemy => enemy.draw(this.ctx));
+        this.particles.forEach(particle => particle.draw(this.ctx));
         if (this.player) {
             this.player.draw(this.ctx);
         }
-        this.enemies.forEach(enemy => enemy.draw(this.ctx));
-        this.particles.forEach(particle => {
-            particle.draw(this.ctx);
-        });
         this.drawUI();
+        // 5. Den Zustand wieder zurücksetzen, um für den nächsten Frame bereit zu sein.
+        this.ctx.restore();
     }
     /** Zeichnet die Benutzeroberfläche (Leben, Game Over) über das Spielgeschehen. */
     drawUI() {
@@ -296,6 +316,13 @@ FPS:            ${fps}
         this.draw();
         this.updateLog();
         requestAnimationFrame(this.gameLoop.bind(this));
+    }
+    /**
+     * Löst einen Screen-Shake-Effekt aus.
+     * @param duration Die Dauer des Effekts in Millisekunden.
+     */
+    triggerShake(duration) {
+        this.shakeDuration = duration;
     }
 }
 // Erstellt die Spiel-Instanz. Die Initialisierung erfolgt in `init()` nach `window.onload`.
