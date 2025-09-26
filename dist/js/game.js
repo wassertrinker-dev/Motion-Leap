@@ -12,6 +12,7 @@ import { Player } from './player.js';
 import { Enemy } from './enemy.js';
 import { themes } from './themes.js';
 import { Particle } from './particle.js';
+import { Background } from './background.js';
 /**
  * Die Hauptklasse, die das gesamte Spiel orchestriert.
  * Verwaltet die Spiel-Schleife, den Zustand, alle Spielobjekte, das Rendering und die Kamera-Eingabe.
@@ -23,6 +24,8 @@ export class Game {
      * die erst nach dem vollständigen Laden der Seite aufgerufen wird.
      */
     constructor() {
+        // --- EIGENSCHAFTEN ---
+        this.background = null; // NEU: Eigenschaft für den Hintergrund
         // Spiel-Objekte
         this.player = null;
         this.particles = []; // NEU
@@ -77,6 +80,7 @@ export class Game {
                     document.body.style.backgroundColor = this.selectedTheme.backgroundColor;
                     this.themeSelectionContainer.style.display = 'none';
                     this.startButton.style.display = 'block';
+                    this.background = new Background(this.gameWidth, this.gameHeight, this.selectedTheme.backgroundImageSrc, 1);
                     this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerAnimations);
                 }
             });
@@ -174,6 +178,9 @@ export class Game {
      * @param deltaTime Die Zeit in Millisekunden seit dem letzten Frame.
      */
     update(deltaTime) {
+        if (this.background) {
+            this.background.update();
+        }
         // NEU: Shake-Timer herunterzählen
         if (this.shakeDuration > 0) {
             this.shakeDuration -= deltaTime;
@@ -234,26 +241,39 @@ export class Game {
      * Zeichnet den gesamten Spielzustand auf die Canvas.
      */
     draw() {
-        // 1. ZUERST die Leinwand komplett säubern.
+        // 1. Zuerst die Leinwand komplett säubern.
         this.ctx.clearRect(0, 0, this.gameWidth, this.gameHeight);
-        // 2. JETZT den unverschobenen Zustand speichern.
+        // 2. Zeichne den scrollenden Hintergrund als unterste Ebene.
+        if (this.background) {
+            this.background.draw(this.ctx);
+        }
+        // 3. Speichere den aktuellen Zustand (für den Shake-Effekt).
         this.ctx.save();
-        // 3. Wenn nötig, die Verschiebung für den Shake anwenden.
         if (this.shakeDuration > 0) {
             const shakeX = (Math.random() - 0.5) * 2 * this.shakeMagnitude;
             const shakeY = (Math.random() - 0.5) * 2 * this.shakeMagnitude;
             this.ctx.translate(shakeX, shakeY);
         }
-        // 4. Jetzt den gesamten Spielinhalt auf die (möglicherweise verschobene) Leinwand malen.
+        // 4. Speichere den Zustand erneut (jetzt mit der Shake-Verschiebung).
+        // Dies ist ein Trick, um die Transparenz-Änderung isoliert zu halten.
+        this.ctx.save();
+        // 5. Setze die Deckkraft NUR für die nächste Zeichenoperation.
+        this.ctx.globalAlpha = 0.5; // Experimentiere mit diesem Wert! 0.4 - 0.6 ist oft gut.
+        // 6. Zeichne das Kamerabild. Es wird jetzt halbtransparent sein.
         this.ctx.drawImage(this.video, 0, 0, this.gameWidth, this.gameHeight);
+        // 7. Stelle den Zustand von vor der Transparenz-Änderung wieder her.
+        // globalAlpha ist jetzt automatisch wieder 1.0.
+        this.ctx.restore();
+        // 8. Zeichne alle Spielobjekte mit voller Deckkraft.
         this.enemies.forEach(enemy => enemy.draw(this.ctx));
         this.particles.forEach(particle => particle.draw(this.ctx));
         if (this.player) {
             this.player.draw(this.ctx);
         }
-        this.drawUI();
-        // 5. Den Zustand wieder zurücksetzen, um für den nächsten Frame bereit zu sein.
+        // 9. Setze die Canvas auf den unverschobenen Zustand zurück.
         this.ctx.restore();
+        // 10. Zeichne die UI als allerletzte, oberste Schicht.
+        this.drawUI();
     }
     /** Zeichnet die Benutzeroberfläche (Leben, Game Over) über das Spielgeschehen. */
     drawUI() {

@@ -1,0 +1,21 @@
+[33mcf1aba7[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m shakking
+[33m0388ffd[m added destruction animation
+[33mfccb1f7[m added Punktestand
+[33m35868ab[m added offset + enemy pics
+[33m860c8c0[m animation mit doku
+[33m194d41c[m animation no doku
+[33m3b87687[m changed gitignore to not add rawmedia
+[33mf085950[m FIX: Include dist/js folder for GitHub Pages deployment
+[33m1c2cb84[m FEAT: Dynamischen Ladebalken implementiert und .gitignore finalisiert
+[33m4fabff2[m FIX: .gitignore finalisieren und korrekt konfigurieren
+[33m5f42c72[m Einführung vom  Theme , Ersetze Spieler durch Theme inhalte.
+[33m130442f[m Ersetze Gegner-Rechtecke durch Mauer-Bilder
+[33m7a16a7b[m Füge TSDoc-Kommentare hinzu und richte TypeDoc ein
+[33m6b44f91[m type doc player
+[33m5d32710[m debug fenster zeigt was an
+[33mef5dec7[m debug fester integriert
+[33ma300c05[m tensor für die Sprungerkennung integriert
+[33mc53b91f[m video integriert
+[33mc2cb8d4[m Implementiere Kollision, Leben und Game-Over-Zustand
+[33ma4e2407[m Gegner-Logik hinzugefügt und Sprung-Funktion implementiert
+[33mde37851[m Initial commit: Grundstruktur des Spiels erstellt

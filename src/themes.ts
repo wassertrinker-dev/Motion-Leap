@@ -36,6 +36,7 @@ export interface GameTheme {
     // ÄNDERUNG: Ersetze 'enemyImageSrc: string' durch dies hier:
     enemyAsset: EnemyAsset; 
     backgroundColor: string;
+    backgroundImageSrc: string; 
 }
 
 /**
@@ -68,7 +69,8 @@ export const themes: { [key: string]: GameTheme } = {
                 size: 150       // Wähle eine gute Größe für die Explosion
             }
         },
-        backgroundColor: '#FFC0CB'
+        backgroundColor: '#FFC0CB',
+        backgroundImageSrc: 'assets/prinzessin_BG.png' // NEU
     },
     'ninja': {
         playerAnimations: {
@@ -90,7 +92,8 @@ export const themes: { [key: string]: GameTheme } = {
                 size: 150
             }
         },
-        backgroundColor: '#4F4F4F'
+        backgroundColor: '#4F4F4F',
+        backgroundImageSrc: 'assets/ninja_BG.png' // NEU
     }
 };
 

@@ -29,7 +29,8 @@ export const themes = {
                 size: 150 // Wähle eine gute Größe für die Explosion
             }
         },
-        backgroundColor: '#FFC0CB'
+        backgroundColor: '#FFC0CB',
+        backgroundImageSrc: 'assets/prinzessin_BG.png' // NEU
     },
     'ninja': {
         playerAnimations: {
@@ -51,6 +52,7 @@ export const themes = {
                 size: 150
             }
         },
-        backgroundColor: '#4F4F4F'
+        backgroundColor: '#4F4F4F',
+        backgroundImageSrc: 'assets/ninja_BG.png' // NEU
     }
 };
