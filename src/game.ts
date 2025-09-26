@@ -40,7 +40,7 @@ export class Game {
     particles: Particle[] = []; // NEU
 
     // Spielzustand & Timing
-    lives!: number;
+
     score!: number;
     isGameOver!: boolean;
     selectedTheme: GameTheme | null = null;
@@ -56,6 +56,10 @@ export class Game {
     
     // Logging
     lastJumpMovement: number = 0;
+
+    // NEU: Eigenschaften für den Timer
+    levelTime: number = 180; // Level-Dauer in Sekunden (z.B. 3 Minuten)
+    timeRemaining: number = 0;
 
     //  Eigenschaften für den Screen Shake
     shakeDuration: number = 0; // Wie lange der Shake noch andauert (in ms)
@@ -94,7 +98,6 @@ export class Game {
         
         this.enemyTimer = 0;
         this.enemyInterval = 2000;
-        this.lives = 0;
         this.isGameOver = false;
 
         this.startGame = this.startGame.bind(this);
@@ -141,8 +144,8 @@ export class Game {
             this.canvas.style.display = 'block';
             this.startButton.style.display = 'none';
             
-            this.lives = 300000; // Hoher Wert zum Testen
             this.score = 0;
+            this.timeRemaining = this.levelTime; // Setze den Timer auf die Startzeit
             this.isGameOver = false;
             this.enemies = [];
             this.enemyTimer = 0;
@@ -224,9 +227,22 @@ export class Game {
         this.shakeDuration -= deltaTime;
     }
 
-    if (this.isGameOver || !this.player) return;
+     // GEÄNDERT: Stoppt die Spiellogik, wenn das Level vorbei ist.
+    if (this.isGameOver) {
+        return;
+    }
 
-        if (this.isGameOver || !this.player) return;
+     // NEU: Timer für das Level herunterzählen
+    this.timeRemaining -= deltaTime / 1000; // Teile durch 1000 für Sekunden
+    if (this.timeRemaining <= 0) {
+        this.timeRemaining = 0;
+        this.isGameOver = true; // Stoppt das Spiel, wenn die Zeit abgelaufen ist
+    }
+
+
+   // if (this.isGameOver || !this.player) return;
+
+        if (!this.player) return;
         this.player.update(deltaTime, this.gameHeight);
 
         if (this.enemyTimer > this.enemyInterval) {
@@ -236,6 +252,7 @@ export class Game {
             this.enemyTimer += deltaTime;
         }
         this.enemies.forEach(enemy => enemy.update());
+
         this.enemies.forEach((enemy, index) => {
             if (this.player &&
                 this.player.x < enemy.x + enemy.width &&
@@ -268,11 +285,7 @@ export class Game {
         } else {
                 
                 this.enemies.splice(index, 1);
-                this.lives--;
-                if (this.lives <= 0) {
-                    this.isGameOver = true;
-                }
-
+               
                 this.triggerShake(200); // Shake für 200 Millisekunden
 
             }
@@ -337,19 +350,25 @@ export class Game {
 
 
     /** Zeichnet die Benutzeroberfläche (Leben, Game Over) über das Spielgeschehen. */
-    drawUI() {
-        this.ctx.fillStyle = 'black';
-        this.ctx.font = '30px Arial';
-        this.ctx.textAlign = 'left';
-        this.ctx.fillText(`Leben: ${this.lives}`, 20, 40);
-         this.ctx.fillText(`Punktestand: ${this.score}`, 20, 80); // NEU
+   drawUI() {
+    this.ctx.fillStyle = 'black';
+    this.ctx.font = '30px Arial';
+    this.ctx.textAlign = 'left';
 
-        if (this.isGameOver) {
-            this.ctx.textAlign = 'center';
-            this.ctx.font = '60px Arial';
-            this.ctx.fillText('Game Over', this.gameWidth / 2, this.gameHeight / 2);
-        }
+    // NEU: Zeitanzeige
+    const minutes = Math.floor(this.timeRemaining / 60);
+    const seconds = Math.floor(this.timeRemaining % 60);
+    this.ctx.fillText(`Zeit: ${minutes}:${seconds.toString().padStart(2, '0')}`, 20, 40);
+
+    this.ctx.fillText(`Score: ${this.score}`, 20, 80);
+
+    // ÄNDERUNG: Angepasste End-Nachricht
+    if (this.isGameOver && this.timeRemaining <= 0) {
+        this.ctx.textAlign = 'center';
+        this.ctx.font = '60px Arial';
+        this.ctx.fillText('Level geschafft!', this.gameWidth / 2, this.gameHeight / 2);
     }
+}
 
     /** Aktualisiert den Inhalt des Debug-Log-Fensters mit Echtzeit-Daten. */
     updateLog() {
@@ -380,7 +399,6 @@ ${particleInfo} // Füge die neuen Partikel-Infos hier ein
 -- ANIMATION --
 Frame:          ${this.player.frameX} / ${this.player.maxFrame - 1}
 -- GAME STATE --
-Lives:          ${this.lives}
 Enemies:        ${this.enemies.length}
 Game Over:      ${this.isGameOver}
 FPS:            ${fps}
