@@ -15,6 +15,9 @@ declare const tf: any;
  * Verwaltet die Spiel-Schleife, den Zustand, alle Spielobjekte, das Rendering und die Kamera-Eingabe.
  */
 export class Game {
+    // Video winning screen
+    endScreenOverlay!: HTMLElement;
+    winVideo!: HTMLVideoElement;
     // --- EIGENSCHAFTEN ---
     background: Background | null = null; // NEU: Eigenschaft für den Hintergrund
     // Canvas & Rendering
@@ -58,7 +61,7 @@ export class Game {
     lastJumpMovement: number = 0;
 
     // NEU: Eigenschaften für den Timer
-    levelTime: number = 180; // Level-Dauer in Sekunden (z.B. 3 Minuten)
+    levelTime: number = 18; // Level-Dauer in Sekunden (z.B. 3 Minuten)
     timeRemaining: number = 0;
 
     //  Eigenschaften für den Screen Shake
@@ -90,6 +93,13 @@ export class Game {
         this.loadingOverlay = document.getElementById('loading-overlay')!;
         this.progressBar = document.getElementById('progress-bar')!;
         this.progressText = document.getElementById('progress-text')!;
+
+        this.endScreenOverlay = document.getElementById('end-screen-overlay')!;
+        this.winVideo = document.getElementById('win-video') as HTMLVideoElement;
+
+        // Die Buttons holen wir auch, auch wenn sie noch keine Funktion haben
+        const restartButton = document.getElementById('restart-button')!;
+        const nextLevelButton = document.getElementById('next-level-button')!;
 
         this.gameWidth = 800;
         this.gameHeight = 600;
@@ -130,6 +140,11 @@ export class Game {
      * Zeigt den Ladebildschirm an, fordert Kamerazugriff an, lädt KI-Modelle und startet die Spiel-Schleife.
      */
     async startGame() {
+    
+        if (this.endScreenOverlay) {
+            this.endScreenOverlay.style.display = 'none';
+        }
+
         this.loadingOverlay.style.display = 'flex';
         this.progressBar.style.width = '0%';
         this.progressText.innerText = '0%';
@@ -237,6 +252,7 @@ export class Game {
     if (this.timeRemaining <= 0) {
         this.timeRemaining = 0;
         this.isGameOver = true; // Stoppt das Spiel, wenn die Zeit abgelaufen ist
+         this.showEndScreen();
     }
 
 
@@ -300,6 +316,23 @@ export class Game {
     });
     }
 
+     /**
+     * Zeigt den "Level geschafft!"-Bildschirm an.
+     */
+    showEndScreen() {
+        if (this.selectedTheme) {
+            // Setze den Hintergrund des Overlays passend zum Thema
+            this.endScreenOverlay.style.backgroundImage = `url(${this.selectedTheme.backgroundImageSrc})`;
+        }
+        
+        // Lade das Sieges-Video und spiele es ab
+        this.winVideo.src = this.selectedTheme.winVideoSrc;
+        this.winVideo.play();
+
+        // Zeige das Overlay an
+        this.endScreenOverlay.style.display = 'flex';
+    }
+
     /**
      * Zeichnet den gesamten Spielzustand auf die Canvas.
      */
@@ -361,14 +394,8 @@ export class Game {
     this.ctx.fillText(`Zeit: ${minutes}:${seconds.toString().padStart(2, '0')}`, 20, 40);
 
     this.ctx.fillText(`Score: ${this.score}`, 20, 80);
-
-    // ÄNDERUNG: Angepasste End-Nachricht
-    if (this.isGameOver && this.timeRemaining <= 0) {
-        this.ctx.textAlign = 'center';
-        this.ctx.font = '60px Arial';
-        this.ctx.fillText('Level geschafft!', this.gameWidth / 2, this.gameHeight / 2);
+    
     }
-}
 
     /** Aktualisiert den Inhalt des Debug-Log-Fensters mit Echtzeit-Daten. */
     updateLog() {

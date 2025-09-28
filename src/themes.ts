@@ -36,7 +36,8 @@ export interface GameTheme {
     // ÄNDERUNG: Ersetze 'enemyImageSrc: string' durch dies hier:
     enemyAsset: EnemyAsset; 
     backgroundColor: string;
-    backgroundImageSrc: string; 
+    backgroundImageSrc: string;
+    winVideoSrc: string; // NEU: Der Pfad zum Sieges-Video 
 }
 
 /**
@@ -70,7 +71,8 @@ export const themes: { [key: string]: GameTheme } = {
             }
         },
         backgroundColor: '#FFC0CB',
-        backgroundImageSrc: 'assets/prinzessin_BG.png' // NEU
+        backgroundImageSrc: 'assets/prinzessin_BG.png', // NEU
+        winVideoSrc: 'assets/princess_win.webm' // NEU
     },
     'ninja': {
         playerAnimations: {
@@ -93,7 +95,8 @@ export const themes: { [key: string]: GameTheme } = {
             }
         },
         backgroundColor: '#4F4F4F',
-        backgroundImageSrc: 'assets/ninja_BG.png' // NEU
+        backgroundImageSrc: 'assets/ninja_BG.png', // NEU
+         winVideoSrc: 'assets/ninja_win.webm' // NEU
     }
 };
 
