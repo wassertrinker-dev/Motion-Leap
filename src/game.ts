@@ -61,7 +61,7 @@ export class Game {
     lastJumpMovement: number = 0;
 
     // NEU: Eigenschaften für den Timer
-    levelTime: number = 18; // Level-Dauer in Sekunden (z.B. 3 Minuten)
+    levelTime: number = 60; // Level-Dauer in Sekunden (z.B. 3 Minuten)
     timeRemaining: number = 0;
 
     //  Eigenschaften für den Screen Shake

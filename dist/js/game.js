@@ -37,7 +37,7 @@ export class Game {
         // Logging
         this.lastJumpMovement = 0;
         // NEU: Eigenschaften für den Timer
-        this.levelTime = 18; // Level-Dauer in Sekunden (z.B. 3 Minuten)
+        this.levelTime = 60; // Level-Dauer in Sekunden (z.B. 3 Minuten)
         this.timeRemaining = 0;
         //  Eigenschaften für den Screen Shake
         this.shakeDuration = 0; // Wie lange der Shake noch andauert (in ms)
