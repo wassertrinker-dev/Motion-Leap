@@ -7,27 +7,28 @@ import { EnemyAsset } from './themes.js';
  * Jede Instanz dieser Klasse verwaltet ihre eigene Position, ihr Aussehen und ihre Bewegung.
  */
 export class Enemy {
-    /** Die horizontale Position (linke Kante) des Gegners. */
+    /** Die horizontale Position (linke Kante) des Gegners in Pixeln. */
     x: number;
-    /** Die vertikale Position (obere Kante) des Gegners. */
+    /** Die vertikale Position (obere Kante) des Gegners in Pixeln. */
     y: number;
-    /** Die Breite des Gegners in Pixel. */
+    /** Die Breite des Gegners in Pixeln. */
     width: number;
-    /** Die Höhe des Gegners in Pixel. */
+    /** Die Höhe des Gegners in Pixeln. */
     height: number;
-    /** Die Geschwindigkeit in Pixel pro Frame, mit der sich der Gegner von rechts nach links bewegt. */
+    /** Die Geschwindigkeit in Pixeln pro Frame, mit der sich der Gegner von rechts nach links bewegt. */
     speed: number;
-    /** Das Bild-Element, das den Gegner darstellt (z.B. eine Mauer oder ein Wurfstern). */
+    /** Das HTMLImageElement, das den Gegner darstellt. */
     image: HTMLImageElement;
-    /** Ein Schalter, der anzeigt, ob das Bild des Gegners fertig geladen ist, um Zeichenfehler zu vermeiden. */
+    /** Ein Flag, das anzeigt, ob das Bild des Gegners fertig geladen ist, um Zeichenfehler zu vermeiden. */
     isImageLoaded: boolean = false;
 
     /**
      * Erstellt eine neue Gegner-Instanz.
-     * Der Gegner wird standardmäßig direkt außerhalb des rechten Bildschirmrands und am Boden platziert.
-     * @param gameWidth Die Gesamtbreite des Spielfelds, um die Startposition festzulegen.
-     * @param gameHeight Die Gesamthöhe des Spielfelds, um die Position am Boden zu berechnen.
-     * @param imageSrc Der Pfad zur Bilddatei für den Gegner, der vom aktuellen Thema bestimmt wird.
+     * Der Gegner wird initial außerhalb des rechten Bildschirmrands platziert und bewegt sich nach links.
+     * Die vertikale Position wird basierend auf der `gameHeight` und einem optionalen Offset berechnet.
+     * @param {number} gameWidth - Die Gesamtbreite des Spielfelds, um die Startposition festzulegen.
+     * @param {number} gameHeight - Die Gesamthöhe des Spielfelds, um die Position am Boden zu berechnen.
+     * @param {EnemyAsset} asset - Das Konfigurationsobjekt aus `themes.ts`, das Bildquelle, Größe und Offset enthält.
      */
     constructor(gameWidth: number, gameHeight: number, asset: EnemyAsset) {
         this.width = asset.width;
@@ -35,11 +36,9 @@ export class Enemy {
         this.speed = 4;
         this.x = gameWidth;
         
-        // HIER IST DIE KORRIGIERTE LOGIK:
-        // 1. Berechne die Position, an der die Kollisionsbox den Boden berührt
+        // Berechnet die Y-Position, sodass die Unterkante der Kollisionsbox den Boden berührt,
+        // und wendet dann den themenspezifischen yOffset an, um die Figur ggf. schweben zu lassen.
         const groundPosition = gameHeight - this.height;
-        
-        // 2. Subtrahiere den Offset, um die Figur nach oben zu verschieben
         this.y = groundPosition - (asset.yOffset || 0);
 
         this.image = new Image();
@@ -49,13 +48,13 @@ export class Enemy {
         this.image.src = asset.src;
     }
 
-
     /**
      * Zeichnet das Bild des Gegners an seiner aktuellen Position auf die Canvas.
-     * @param context Der 2D-Rendering-Kontext der Canvas, auf den gezeichnet werden soll.
+     * Die Methode prüft intern, ob das Bild bereits geladen ist.
+     * @param {CanvasRenderingContext2D} context - Der 2D-Rendering-Kontext der Canvas, auf den gezeichnet werden soll.
+     * @returns {void}
      */
-    draw(context: CanvasRenderingContext2D) {
-        // Zeichnet nur, wenn das Bild erfolgreich geladen wurde, um Fehler zu vermeiden.
+    draw(context: CanvasRenderingContext2D): void {
         if (this.isImageLoaded) {
             context.drawImage(this.image, this.x, this.y, this.width, this.height);
         }
@@ -63,10 +62,10 @@ export class Enemy {
 
     /**
      * Aktualisiert den Zustand des Gegners für den nächsten Frame.
-     * Die Hauptaufgabe dieser Methode ist es, den Gegner nach links zu bewegen.
+     * Die Hauptaufgabe dieser Methode ist es, den Gegner um seine `speed` nach links zu bewegen.
+     * @returns {void}
      */
-    update() {
-        // Verringert die x-Position, um eine Bewegung von rechts nach links zu erzeugen.
+    update(): void {
         this.x -= this.speed;
     }
 }

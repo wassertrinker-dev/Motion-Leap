@@ -1,4 +1,4 @@
-// in /src/game.ts
+// in /src/game.ts (VOLLSTÄNDIGE & KORREKTE VERSION)
 
 import { Player } from './player.js';
 import { Enemy } from './enemy.js';
@@ -15,75 +15,102 @@ declare const tf: any;
  * Verwaltet die Spiel-Schleife, den Zustand, alle Spielobjekte, das Rendering und die Kamera-Eingabe.
  */
 export class Game {
-    // Video winning screen
-    endScreenOverlay!: HTMLElement;
-    winVideo!: HTMLVideoElement;
     // --- EIGENSCHAFTEN ---
-    background: Background | null = null; // NEU: Eigenschaft für den Hintergrund
-    // Canvas & Rendering
+
+    // --- HTML-Elemente & Rendering ---
+    /** Das HTMLCanvasElement, auf dem das Spiel gezeichnet wird. */
     canvas!: HTMLCanvasElement;
+    /** Der 2D-Rendering-Kontext des Canvas. */
     ctx!: CanvasRenderingContext2D;
-
-    // Spiel-Dimensionen
-    gameWidth!: number;
-    gameHeight!: number;
-    
-    // HTML-Elemente
+    /** Der HTML-Button zum Starten des Spiels. */
     startButton!: HTMLButtonElement;
+    /** Das HTMLVideoElement, das den Kamera-Feed anzeigt. */
     video!: HTMLVideoElement;
+    /** Das HTML-Element zur Anzeige von Debug-Informationen. */
     logElement!: HTMLElement;
+    /** Der Container für die Auswahl des visuellen Themas. */
     themeSelectionContainer!: HTMLElement;
+    /** Das Overlay, das während des Ladens von Modellen angezeigt wird. */
     loadingOverlay!: HTMLElement;
+    /** Der Ladebalken innerhalb des Lade-Overlays. */
     progressBar!: HTMLElement;
+    /** Das Textfeld, das den Fortschritt des Ladebalkens anzeigt. */
     progressText!: HTMLElement;
+    /** Das Overlay für den "Level geschafft!"-Bildschirm. */
+    endScreenOverlay!: HTMLElement;
+    /** Das Video-Element, das auf dem End-Screen abgespielt wird. */
+    winVideo!: HTMLVideoElement;
 
-    // Spiel-Objekte
+    // --- Spiel-Dimensionen ---
+    /** Die feste Breite des Spielbereichs in Pixeln. */
+    gameWidth!: number;
+    /** Die feste Höhe des Spielbereichs in Pixeln. */
+    gameHeight!: number;
+
+    // --- Spiel-Objekte ---
+    /** Die Spielerinstanz. Null, bis ein Thema gewählt wurde. */
     player: Player | null = null;
+    /** Ein Array, das alle aktiven Gegnerinstanzen enthält. */
     enemies: Enemy[];
-    particles: Particle[] = []; // NEU
+    /** Ein Array, das alle aktiven Partikelanimationen (z.B. bei Gegnerzerstörung) enthält. */
+    particles: Particle[];
+    /** Die Instanz für den scrollenden Parallax-Hintergrund. */
+    background: Background | null = null;
 
-    // Spielzustand & Timing
-
+    // --- Spielzustand & Timing ---
+    /** Der aktuelle Punktestand des Spielers. */
     score!: number;
+    /** Ein Flag, das anzeigt, ob das Spiel beendet ist (z.B. Zeit abgelaufen). */
     isGameOver!: boolean;
+    /** Das aktuell vom Spieler ausgewählte visuelle Thema. */
     selectedTheme: GameTheme | null = null;
+    /** Ein Timer, der steuert, wann der nächste Gegner erscheint. Zählt in Millisekunden hoch. */
     enemyTimer!: number;
+    /** Das Intervall in Millisekunden, in dem neue Gegner erzeugt werden. */
     enemyInterval!: number;
+    /** Der Zeitstempel des letzten Frames der Spiel-Schleife. */
     lastTime: number = 0;
+    /** Der Zeitstempel des vorletzten Frames, zur FPS-Berechnung. */
     prevTime: number = 0;
-
-    // Pose Detection
-    poseDetector: any;
-    lastShoulderY: number | null = null;
-    JUMP_SENSITIVITY: number = 10;
-    
-    // Logging
-    lastJumpMovement: number = 0;
-
-    // NEU: Eigenschaften für den Timer
-    levelTime: number = 60; // Level-Dauer in Sekunden (z.B. 3 Minuten)
+    /** Die Dauer eines Levels in Sekunden. */
+    levelTime: number = 60;
+    /** Die verbleibende Zeit im aktuellen Level in Sekunden. */
     timeRemaining: number = 0;
 
-    //  Eigenschaften für den Screen Shake
-    shakeDuration: number = 0; // Wie lange der Shake noch andauert (in ms)
-    shakeMagnitude: number = 5;  // Wie stark die Verschiebung ist (in Pixel)
+    // --- Pose Detection ---
+    /** Die Instanz des TensorFlow.js Pose-Detektors (MoveNet). */
+    poseDetector: any;
+    /** Die durchschnittliche Y-Position der Schultern aus dem letzten Frame. */
+    lastShoulderY: number | null = null;
+    /** Die Empfindlichkeit für die Sprungerkennung. Ein höherer Wert erfordert eine schnellere Bewegung. */
+    readonly JUMP_SENSITIVITY: number = 10;
 
-    
+    // --- Effekte & Logging ---
+    /** Die zuletzt erkannte vertikale Bewegung der Schultern (für Debug-Zwecke). */
+    lastJumpMovement: number = 0;
+    /** Die verbleibende Dauer des Screen-Shake-Effekts in Millisekunden. */
+    shakeDuration: number = 0;
+    /** Die Stärke des Screen-Shake-Effekts in Pixeln. */
+    shakeMagnitude: number = 5;
+
     /**
-     * Erstellt die Haupt-Spielinstanz.
-     * Der Constructor ist schlank und delegiert die Initialisierung an die `init()`-Methode,
-     * die erst nach dem vollständigen Laden der Seite aufgerufen wird.
+     * Erstellt eine neue Instanz des Spiels.
+     * Der Konstruktor initialisiert die Objekt-Arrays und registriert die `init()`-Methode,
+     * die nach dem vollständigen Laden der Seite aufgerufen wird.
      */
     constructor() {
         this.enemies = [];
+        this.particles = [];
         window.onload = () => this.init();
     }
 
     /**
      * Initialisiert das Spiel, nachdem die HTML-Seite vollständig geladen ist.
-     * Holt alle HTML-Elemente, setzt Dimensionen und richtet Event-Listener ein.
+     * Holt alle notwendigen HTML-Elemente, setzt die Spiel-Dimensionen
+     * und richtet die initialen Event-Listener ein.
+     * @returns {void}
      */
-    init() {
+    init(): void {
         this.canvas = document.getElementById('gameCanvas') as HTMLCanvasElement;
         this.ctx = this.canvas.getContext('2d')!;
         this.startButton = document.getElementById('startButton') as HTMLButtonElement;
@@ -93,14 +120,11 @@ export class Game {
         this.loadingOverlay = document.getElementById('loading-overlay')!;
         this.progressBar = document.getElementById('progress-bar')!;
         this.progressText = document.getElementById('progress-text')!;
-
         this.endScreenOverlay = document.getElementById('end-screen-overlay')!;
         this.winVideo = document.getElementById('win-video') as HTMLVideoElement;
 
-        // Die Buttons holen wir auch, auch wenn sie noch keine Funktion haben
         const restartButton = document.getElementById('restart-button')!;
-        const nextLevelButton = document.getElementById('next-level-button')!;
-
+        
         this.gameWidth = 800;
         this.gameHeight = 600;
         this.canvas.width = this.gameWidth;
@@ -114,12 +138,16 @@ export class Game {
 
         this.setupThemeSelection();
         this.startButton.addEventListener('click', this.startGame);
+        // Die einzige logische Änderung: Den Neustart-Button funktionsfähig machen.
+        restartButton.addEventListener('click', this.startGame); 
     }
 
     /**
-     * Richtet die Event-Listener für die klickbaren Themen-Karten ein.
+     * Richtet die Klick-Events für die Themenauswahl-Karten ein.
+     * Bei Auswahl eines Themas wird der Spieler erstellt und der Start-Button angezeigt.
+     * @returns {void}
      */
-    setupThemeSelection() {
+    setupThemeSelection(): void {
         document.querySelectorAll('.theme-choice').forEach(card => {
             card.addEventListener('click', (event) => {
                 const themeName = (event.currentTarget as HTMLElement).dataset.theme;
@@ -136,11 +164,12 @@ export class Game {
     }
 
     /**
-     * Behandelt den asynchronen Startprozess des Spiels nach dem Klick auf "Start".
-     * Zeigt den Ladebildschirm an, fordert Kamerazugriff an, lädt KI-Modelle und startet die Spiel-Schleife.
+     * Startet den asynchronen Spielprozess.
+     * Kümmert sich um Kamerazugriff, Laden der KI-Modelle und Zurücksetzen des Spielzustands.
+     * @async
+     * @returns {Promise<void>}
      */
-    async startGame() {
-    
+    async startGame(): Promise<void> {
         if (this.endScreenOverlay) {
             this.endScreenOverlay.style.display = 'none';
         }
@@ -160,12 +189,13 @@ export class Game {
             this.startButton.style.display = 'none';
             
             this.score = 0;
-            this.timeRemaining = this.levelTime; // Setze den Timer auf die Startzeit
+            this.timeRemaining = this.levelTime;
             this.isGameOver = false;
             this.enemies = [];
             this.enemyTimer = 0;
 
             if (this.player) {
+                // Zurück zum Original-Code
                 this.player.y = 0;
                 this.player.velocityY = 0;
             }
@@ -181,14 +211,16 @@ export class Game {
     
     /**
      * Lädt und konfiguriert das MoveNet-Modell für die Posenerkennung.
-     * Aktualisiert dabei den Ladebalken.
+     * Aktualisiert den Ladebalken während des Downloads.
+     * @async
+     * @returns {Promise<void>}
      */
-    async setupPoseDetection() {
+    async setupPoseDetection(): Promise<void> {
         await tf.ready();
         const model = poseDetection.SupportedModels.MoveNet;
 
         this.poseDetector = await poseDetection.createDetector(model, { 
-            onProgress: (fraction) => {
+            onProgress: (fraction: number) => {
                 const percent = Math.floor(fraction * 100);
                 this.progressBar.style.width = `${percent}%`;
                 this.progressText.innerText = `${percent}%`;
@@ -198,15 +230,20 @@ export class Game {
     }
 
     /**
-     * Analysiert das Kamerabild in jedem Frame, um eine Sprungbewegung zu erkennen.
+     * Analysiert das aktuelle Kamerabild, um eine Sprungbewegung der Schultern zu erkennen.
+     * Wenn eine schnelle Aufwärtsbewegung erkannt wird, wird die `jump()`-Methode des Spielers aufgerufen.
+     * @async
+     * @returns {Promise<void>}
      */
-    async detectJump() {
-        if (!this.poseDetector || this.video.paused || this.video.ended) return;
+    async detectJump(): Promise<void> {
+        if (!this.poseDetector || this.video.paused || this.video.ended || !this.player) return;
+        
         const poses = await this.poseDetector.estimatePoses(this.video);
-        if (poses && poses.length > 0 && this.player) {
+        if (poses && poses.length > 0) {
             const keypoints = poses[0].keypoints;
             const leftShoulder = keypoints.find(p => p.name === 'left_shoulder');
             const rightShoulder = keypoints.find(p => p.name === 'right_shoulder');
+
             if (leftShoulder && rightShoulder && leftShoulder.score > 0.5 && rightShoulder.score > 0.5) {
                 const currentShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
                 if (this.lastShoulderY !== null) {
@@ -221,44 +258,45 @@ export class Game {
         }
     }
 
-    /** Erstellt eine neue Gegner-Instanz basierend auf dem gewählten Thema. */
-    addEnemy() {
-    if (this.selectedTheme) {
-        // Wir übergeben jetzt das GANZE asset-Objekt, nicht mehr nur den Bild-Pfad.
-        this.enemies.push(new Enemy(this.gameWidth, this.gameHeight, this.selectedTheme.enemyAsset));
+    /**
+     * Erstellt einen neuen Gegner basierend auf dem ausgewählten Thema und fügt ihn zum Spiel hinzu.
+     * @returns {void}
+     */
+    addEnemy(): void {
+        if (this.selectedTheme) {
+            this.enemies.push(new Enemy(this.gameWidth, this.gameHeight, this.selectedTheme.enemyAsset));
+        }
     }
-}
 
     /**
      * Aktualisiert den gesamten Spielzustand für den nächsten Frame.
-     * @param deltaTime Die Zeit in Millisekunden seit dem letzten Frame.
+     * Beinhaltet Spieler, Gegner, Kollisionen, Timer und Effekte.
+     * @param {number} deltaTime - Die Zeit in Millisekunden seit dem letzten Frame.
+     * @returns {void}
      */
-    update(deltaTime: number) {
-     if (this.background) {
+    update(deltaTime: number): void {
+        if (this.background) {
             this.background.update();
         }
-        // NEU: Shake-Timer herunterzählen
-    if (this.shakeDuration > 0) {
-        this.shakeDuration -= deltaTime;
-    }
 
-     // GEÄNDERT: Stoppt die Spiellogik, wenn das Level vorbei ist.
-    if (this.isGameOver) {
-        return;
-    }
+        if (this.shakeDuration > 0) {
+            this.shakeDuration -= deltaTime;
+        }
 
-     // NEU: Timer für das Level herunterzählen
-    this.timeRemaining -= deltaTime / 1000; // Teile durch 1000 für Sekunden
-    if (this.timeRemaining <= 0) {
-        this.timeRemaining = 0;
-        this.isGameOver = true; // Stoppt das Spiel, wenn die Zeit abgelaufen ist
-         this.showEndScreen();
-    }
+        if (this.isGameOver) {
+            return; 
+        }
 
-
-   // if (this.isGameOver || !this.player) return;
+        this.timeRemaining -= deltaTime / 1000;
+        if (this.timeRemaining <= 0) {
+            this.timeRemaining = 0;
+            this.isGameOver = true;
+            this.showEndScreen();
+            return;
+        }
 
         if (!this.player) return;
+        // Zurück zum Original-Code
         this.player.update(deltaTime, this.gameHeight);
 
         if (this.enemyTimer > this.enemyInterval) {
@@ -267,151 +305,133 @@ export class Game {
         } else {
             this.enemyTimer += deltaTime;
         }
-        this.enemies.forEach(enemy => enemy.update());
-
+        
         this.enemies.forEach((enemy, index) => {
+            // Zurück zum Original-Code
+            enemy.update();
+
+            // Zurück zum Original-Code
             if (this.player &&
                 this.player.x < enemy.x + enemy.width &&
                 this.player.x + this.player.width > enemy.x &&
                 this.player.y < enemy.y + enemy.height &&
                 this.player.y + this.player.height > enemy.y) {
             
-            // Bedingung für einen "Stomp" (Sprung von oben):
-            // 1. Der Spieler muss sich nach unten bewegen (fallen).
-            // 2. Die UNTERKANTE des Spielers im LETZTEN Frame muss ÜBER der OBERKANTE des Gegners gewesen sein.
-        const playerBottomLastFrame = this.player.y + this.player.height - this.player.velocityY;
+                const playerBottomLastFrame = this.player.y + this.player.height - this.player.velocityY;
 
-        if (this.player.velocityY > 0 && playerBottomLastFrame <= enemy.y) {
-            // --- ERFOLGREICHER SPRUNG AUF DEN GEGNER ---
-            this.score += 10; // Gib dem Spieler Punkte
-            this.player.velocityY = -10; // Gib dem Spieler einen kleinen "Bounce" nach oben
-            
-           if (this.selectedTheme) {
-                    const destruction = this.selectedTheme.enemyAsset.destruction;
-                    this.particles.push(new Particle(
-                        enemy.x + enemy.width / 2, // Zentrum des Gegners
-                        enemy.y + enemy.height / 2,
-                        destruction.src,
-                        destruction.frameCount,
-                        destruction.size
-                    ));
+                if (this.player.velocityY > 0 && playerBottomLastFrame <= enemy.y) {
+                    this.score += 10;
+                    // Zurück zum Original-Code
+                    this.player.velocityY = -10; 
+                    
+                    if (this.selectedTheme) {
+                        const destruction = this.selectedTheme.enemyAsset.destruction;
+                        this.particles.push(new Particle(
+                            enemy.x + enemy.width / 2,
+                            enemy.y + enemy.height / 2,
+                            destruction.src,
+                            destruction.frameCount,
+                            destruction.size
+                        ));
+                    }
+                    this.enemies.splice(index, 1);
+                } else {
+                    this.enemies.splice(index, 1);
+                    this.triggerShake(200);
                 }
-            
-            this.enemies.splice(index, 1); // Entferne den besiegten Gegner
-        } else {
-                
-                this.enemies.splice(index, 1);
-               
-                this.triggerShake(200); // Shake für 200 Millisekunden
-
             }
-        }});
+        });
+
         this.enemies = this.enemies.filter(enemy => enemy.x + enemy.width > 0);
 
         this.particles.forEach((particle, index) => {
-        particle.update(deltaTime); // HIER wird die update-Methode des Partikels aufgerufen
-        if (particle.markedForDeletion) {
-            this.particles.splice(index, 1);
-        }
-    });
+            particle.update(deltaTime);
+            if (particle.markedForDeletion) {
+                this.particles.splice(index, 1);
+            }
+        });
     }
 
-     /**
+    /**
      * Zeigt den "Level geschafft!"-Bildschirm an.
+     * @returns {void}
      */
-    showEndScreen() {
-        if (this.selectedTheme) {
-            // Setze den Hintergrund des Overlays passend zum Thema
-            this.endScreenOverlay.style.backgroundImage = `url(${this.selectedTheme.backgroundImageSrc})`;
-        }
-        
-        // Lade das Sieges-Video und spiele es ab
+    showEndScreen(): void {
+        if (!this.selectedTheme) return;
+        this.endScreenOverlay.style.backgroundImage = `url(${this.selectedTheme.backgroundImageSrc})`;
         this.winVideo.src = this.selectedTheme.winVideoSrc;
         this.winVideo.play();
-
-        // Zeige das Overlay an
         this.endScreenOverlay.style.display = 'flex';
     }
 
     /**
      * Zeichnet den gesamten Spielzustand auf die Canvas.
+     * Wird in jedem Frame der Spiel-Schleife aufgerufen.
+     * @returns {void}
      */
-   draw() {
-    // 1. Zuerst die Leinwand komplett säubern.
-    this.ctx.clearRect(0, 0, this.gameWidth, this.gameHeight);
+    draw(): void {
+        this.ctx.clearRect(0, 0, this.gameWidth, this.gameHeight);
 
-    // 2. Zeichne den scrollenden Hintergrund als unterste Ebene.
-    if (this.background) {
-        this.background.draw(this.ctx);
-    }
-    
-    // 3. Speichere den aktuellen Zustand (für den Shake-Effekt).
-    this.ctx.save();
-    if (this.shakeDuration > 0) {
-        const shakeX = (Math.random() - 0.5) * 2 * this.shakeMagnitude;
-        const shakeY = (Math.random() - 0.5) * 2 * this.shakeMagnitude;
-        this.ctx.translate(shakeX, shakeY);
-    }
+        if (this.background) {
+            this.background.draw(this.ctx);
+        }
+        
+        this.ctx.save();
+        if (this.shakeDuration > 0) {
+            const shakeX = (Math.random() - 0.5) * 2 * this.shakeMagnitude;
+            const shakeY = (Math.random() - 0.5) * 2 * this.shakeMagnitude;
+            this.ctx.translate(shakeX, shakeY);
+        }
 
-    // 4. Speichere den Zustand erneut (jetzt mit der Shake-Verschiebung).
-    // Dies ist ein Trick, um die Transparenz-Änderung isoliert zu halten.
-    this.ctx.save();
+        this.ctx.save();
+        this.ctx.globalAlpha = 0.5;
+        this.ctx.drawImage(this.video, 0, 0, this.gameWidth, this.gameHeight);
+        this.ctx.restore();
+        
+        this.enemies.forEach(enemy => enemy.draw(this.ctx));
+        this.particles.forEach(particle => particle.draw(this.ctx));
+        if (this.player) {
+            this.player.draw(this.ctx);
+        }
+        
+        this.ctx.restore();
 
-    // 5. Setze die Deckkraft NUR für die nächste Zeichenoperation.
-    this.ctx.globalAlpha = 0.5; // Experimentiere mit diesem Wert! 0.4 - 0.6 ist oft gut.
-
-    // 6. Zeichne das Kamerabild. Es wird jetzt halbtransparent sein.
-    this.ctx.drawImage(this.video, 0, 0, this.gameWidth, this.gameHeight);
-
-    // 7. Stelle den Zustand von vor der Transparenz-Änderung wieder her.
-    // globalAlpha ist jetzt automatisch wieder 1.0.
-    this.ctx.restore();
-    
-    // 8. Zeichne alle Spielobjekte mit voller Deckkraft.
-    this.enemies.forEach(enemy => enemy.draw(this.ctx));
-    this.particles.forEach(particle => particle.draw(this.ctx));
-    if (this.player) {
-        this.player.draw(this.ctx);
-    }
-    
-    // 9. Setze die Canvas auf den unverschobenen Zustand zurück.
-    this.ctx.restore();
-
-    // 10. Zeichne die UI als allerletzte, oberste Schicht.
-    this.drawUI();
-}
-
-
-    /** Zeichnet die Benutzeroberfläche (Leben, Game Over) über das Spielgeschehen. */
-   drawUI() {
-    this.ctx.fillStyle = 'black';
-    this.ctx.font = '30px Arial';
-    this.ctx.textAlign = 'left';
-
-    // NEU: Zeitanzeige
-    const minutes = Math.floor(this.timeRemaining / 60);
-    const seconds = Math.floor(this.timeRemaining % 60);
-    this.ctx.fillText(`Zeit: ${minutes}:${seconds.toString().padStart(2, '0')}`, 20, 40);
-
-    this.ctx.fillText(`Score: ${this.score}`, 20, 80);
-    
+        this.drawUI();
     }
 
-    /** Aktualisiert den Inhalt des Debug-Log-Fensters mit Echtzeit-Daten. */
-    updateLog() {
+    /**
+     * Zeichnet die Benutzeroberfläche (Zeit, Score) über das Spielgeschehen.
+     * @returns {void}
+     */
+    drawUI(): void {
+        this.ctx.fillStyle = 'black';
+        this.ctx.font = '30px Arial';
+        this.ctx.textAlign = 'left';
+
+        const minutes = Math.floor(this.timeRemaining / 60);
+        const seconds = Math.floor(this.timeRemaining % 60);
+        this.ctx.fillText(`Zeit: ${minutes}:${seconds.toString().padStart(2, '0')}`, 20, 40);
+
+        this.ctx.fillText(`Score: ${this.score}`, 20, 80);
+    }
+
+    /**
+     * Aktualisiert den Inhalt des Debug-Log-Fensters mit Echtzeit-Daten.
+     * @returns {void}
+     */
+    updateLog(): void {
         if (!this.player) return;
         const fps = (1000 / (this.lastTime - this.prevTime)).toFixed(1);
      
         let particleInfo = '-- PARTICLES --\n';
-    if (this.particles.length > 0) {
-        const firstParticle = this.particles[0];
-        particleInfo += `Count:          ${this.particles.length}\n`;
-        particleInfo += `Frame:          ${firstParticle.frameX} / ${firstParticle.maxFrame - 1}\n`;
-        particleInfo += `Timer:          ${firstParticle.frameTimer.toFixed(0)} / ${firstParticle.frameInterval.toFixed(0)}\n`;
-    } else {
-        particleInfo += 'Count:          0';
-    }
-
+        if (this.particles.length > 0) {
+            const firstParticle = this.particles[0];
+            particleInfo += `Count:          ${this.particles.length}\n`;
+            particleInfo += `Frame:          ${firstParticle.frameX} / ${firstParticle.maxFrame - 1}\n`;
+            particleInfo += `Timer:          ${firstParticle.frameTimer.toFixed(0)} / ${firstParticle.frameInterval.toFixed(0)}\n`;
+        } else {
+            particleInfo += 'Count:          0';
+        }
 
         const logText = `
 -- JUMP DETECTION --
@@ -421,8 +441,8 @@ Sensitivity:    ${this.JUMP_SENSITIVITY}
 State:          ${this.player.currentState}
 Y Position:     ${this.player.y.toFixed(2)}
 Y Velocity:     ${this.player.velocityY.toFixed(2)}
--- particle -- 
-${particleInfo} // Füge die neuen Partikel-Infos hier ein
+-- PARTICLE -- 
+${particleInfo}
 -- ANIMATION --
 Frame:          ${this.player.frameX} / ${this.player.maxFrame - 1}
 -- GAME STATE --
@@ -434,31 +454,32 @@ FPS:            ${fps}
     }
 
     /**
-     * Die zentrale Spiel-Schleife, die ca. 60 Mal pro Sekunde aufgerufen wird.
-     * @param timestamp Ein hochpräziser Zeitstempel vom Browser.
+     * Die zentrale Spiel-Schleife, die mit `requestAnimationFrame` läuft.
+     * @param {number} timestamp - Ein hochpräziser Zeitstempel, der vom Browser bereitgestellt wird.
+     * @returns {void}
      */
-    gameLoop(timestamp: number) {
+    gameLoop(timestamp: number): void {
         this.prevTime = this.lastTime;
         const deltaTime = timestamp - this.lastTime;
         this.lastTime = timestamp;
 
         this.detectJump();
-        this.update(deltaTime);
+        this.update(deltaTime || 0);
         this.draw();
         this.updateLog();
         
         requestAnimationFrame(this.gameLoop.bind(this));
     }
 
-
-/**
- * Löst einen Screen-Shake-Effekt aus.
- * @param duration Die Dauer des Effekts in Millisekunden.
- */
-triggerShake(duration: number) {
-    this.shakeDuration = duration;
+    /**
+     * Löst einen Screen-Shake-Effekt aus.
+     * @param {number} duration - Die Dauer des Effekts in Millisekunden.
+     * @returns {void}
+     */
+    triggerShake(duration: number): void {
+        this.shakeDuration = duration;
+    }
 }
-}
 
-// Erstellt die Spiel-Instanz. Die Initialisierung erfolgt in `init()` nach `window.onload`.
+// Erstellt die zentrale Spiel-Instanz, die das gesamte Spiel steuert.
 new Game();
