@@ -30,7 +30,8 @@ export const themes = {
         },
         backgroundColor: '#FFC0CB',
         backgroundImageSrc: 'assets/prinzessin_BG.png',
-        winVideoSrc: 'assets/princess_win.webm'
+        winVideoSrc: 'assets/princess_win.webm',
+        backgroundMusicSrc: 'assets/princess_theme.mp3'
     },
     'ninja': {
         playerAnimations: {
@@ -51,6 +52,7 @@ export const themes = {
         },
         backgroundColor: '#4F4F4F',
         backgroundImageSrc: 'assets/ninja_BG.png',
-        winVideoSrc: 'assets/ninja_win.webm'
+        winVideoSrc: 'assets/ninja_win.webm',
+        backgroundMusicSrc: 'assets/ninja_theme.mp3'
     }
 };

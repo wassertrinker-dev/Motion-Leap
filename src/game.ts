@@ -56,7 +56,8 @@ export class Game {
     particles: Particle[];
     /** Die Instanz für den scrollenden Parallax-Hintergrund. */
     background: Background | null = null;
-
+    /* Die Instanz Musik. */
+    backgroundMusic: HTMLAudioElement | null = null; 
     // --- Spielzustand & Timing ---
     /** Der aktuelle Punktestand des Spielers. */
     score!: number;
@@ -73,7 +74,7 @@ export class Game {
     /** Der Zeitstempel des vorletzten Frames, zur FPS-Berechnung. */
     prevTime: number = 0;
     /** Die Dauer eines Levels in Sekunden. */
-    levelTime: number = 15;  // 60 
+    levelTime: number = 60;  // 60 
     /** animation FrameID um gameloop exact zu beneden (bug= gegner zu schnell nachrestart) */
     animationFrameId: number = 0; // <-- DIESE ZEILE HINZUFÜGEN
     /** Die verbleibende Zeit im aktuellen Level in Sekunden. */
@@ -175,7 +176,19 @@ export class Game {
          
         //Stoppt eine eventuell noch laufende, alte Spiel-Schleife.
         cancelAnimationFrame(this.animationFrameId); 
-        
+
+        // Starte die Musik, wenn sie noch nicht initialisiert wurde.
+        // Dieser Block wird nur beim allerersten Spielstart ausgeführt und bei "Level wiederholen" übersprungen.
+        if (!this.backgroundMusic && this.selectedTheme) {
+            this.backgroundMusic = new Audio(this.selectedTheme.backgroundMusicSrc);
+            this.backgroundMusic.loop = true; // Musik soll in einer Schleife laufen
+            this.backgroundMusic.volume = 0.5; // Lautstärke auf 50% (kannst du anpassen)
+            this.backgroundMusic.play().catch(error => {
+                // Fängt Fehler ab, falls der Browser das Abspielen doch blockiert.
+                console.warn("Hintergrundmusik konnte nicht automatisch gestartet werden:", error);
+            });
+        }
+            
         if (this.endScreenOverlay) {
             this.endScreenOverlay.style.display = 'none';
         }
