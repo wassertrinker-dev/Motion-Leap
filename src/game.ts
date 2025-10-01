@@ -73,7 +73,9 @@ export class Game {
     /** Der Zeitstempel des vorletzten Frames, zur FPS-Berechnung. */
     prevTime: number = 0;
     /** Die Dauer eines Levels in Sekunden. */
-    levelTime: number = 60;
+    levelTime: number = 15;  // 60 
+    /** animation FrameID um gameloop exact zu beneden (bug= gegner zu schnell nachrestart) */
+    animationFrameId: number = 0; // <-- DIESE ZEILE HINZUFÜGEN
     /** Die verbleibende Zeit im aktuellen Level in Sekunden. */
     timeRemaining: number = 0;
 
@@ -170,6 +172,10 @@ export class Game {
      * @returns {Promise<void>}
      */
     async startGame(): Promise<void> {
+         
+        //Stoppt eine eventuell noch laufende, alte Spiel-Schleife.
+        cancelAnimationFrame(this.animationFrameId); 
+        
         if (this.endScreenOverlay) {
             this.endScreenOverlay.style.display = 'none';
         }
@@ -275,6 +281,7 @@ export class Game {
      * @returns {void}
      */
     update(deltaTime: number): void {
+         // console.log('Update aufgerufen!'); // logging for debug
         if (this.background) {
             this.background.update();
         }
@@ -468,7 +475,7 @@ FPS:            ${fps}
         this.draw();
         this.updateLog();
         
-        requestAnimationFrame(this.gameLoop.bind(this));
+        this.animationFrameId = requestAnimationFrame(this.gameLoop.bind(this)); // speichern der FrameID
     }
 
     /**

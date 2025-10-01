@@ -36,7 +36,9 @@ export class Game {
         /** Der Zeitstempel des vorletzten Frames, zur FPS-Berechnung. */
         this.prevTime = 0;
         /** Die Dauer eines Levels in Sekunden. */
-        this.levelTime = 60;
+        this.levelTime = 15; // 60 
+        /** animation FrameID um gameloop exact zu beneden (bug= gegner zu schnell nachrestart) */
+        this.animationFrameId = 0; // <-- DIESE ZEILE HINZUFÜGEN
         /** Die verbleibende Zeit im aktuellen Level in Sekunden. */
         this.timeRemaining = 0;
         /** Die durchschnittliche Y-Position der Schultern aus dem letzten Frame. */
@@ -114,6 +116,8 @@ export class Game {
      */
     startGame() {
         return __awaiter(this, void 0, void 0, function* () {
+            //Stoppt eine eventuell noch laufende, alte Spiel-Schleife.
+            cancelAnimationFrame(this.animationFrameId);
             if (this.endScreenOverlay) {
                 this.endScreenOverlay.style.display = 'none';
             }
@@ -213,6 +217,7 @@ export class Game {
      * @returns {void}
      */
     update(deltaTime) {
+        // console.log('Update aufgerufen!'); // logging for debug
         if (this.background) {
             this.background.update();
         }
@@ -377,7 +382,7 @@ FPS:            ${fps}
         this.update(deltaTime || 0);
         this.draw();
         this.updateLog();
-        requestAnimationFrame(this.gameLoop.bind(this));
+        this.animationFrameId = requestAnimationFrame(this.gameLoop.bind(this)); // speichern der FrameID
     }
     /**
      * Löst einen Screen-Shake-Effekt aus.
