@@ -56,6 +56,8 @@ export class Game {
     particles: Particle[];
     /** Die Instanz für den scrollenden Parallax-Hintergrund. */
     background: Background | null = null;
+    scoreSound: HTMLAudioElement | null = null;  // <-- Für den positiven Effekt
+    damageSound: HTMLAudioElement | null = null; // <-- Für den negativen Effekt
     /* Die Instanz Musik. */
     backgroundMusic: HTMLAudioElement | null = null; 
      /** Sound für hit mit gegner. */
@@ -191,23 +193,36 @@ export class Game {
     }
 
     /**
+     * Spielt den punkte-Sound ab.
+     * Erstellt das Audio-Objekt beim ersten Aufruf selbst.
+     */
+    playScoreSound(): void {
+    if (!this.audioUnlocked) return;
+    if (!this.scoreSound && this.selectedTheme) {
+        this.scoreSound = new Audio(this.selectedTheme.scoreSoundSrc);
+        this.scoreSound.volume = 0.7;
+    }
+    if (this.scoreSound) {
+        this.scoreSound.currentTime = 0;
+        this.scoreSound.play();
+    }
+}
+
+    /**
      * Spielt den Kollisions-Sound ab.
      * Erstellt das Audio-Objekt beim ersten Aufruf selbst.
      */
-    playHitSound(): void {
-        // Sicherheitscheck: Nur abspielen, wenn der Hauptschalter an ist.
-        if (!this.audioUnlocked) return;
-
-        // Wenn der Sound noch nicht existiert, erstelle ihn jetzt.
-        if (!this.hitSound) {
-            this.hitSound = new Audio('assets/Bounce.mp3');
-            this.hitSound.volume = 0.7;
-        }
-
-        // Spiele den Sound ab (immer von vorne).
-        this.hitSound.currentTime = 0;
-        this.hitSound.play();
+    playDamageSound(): void {
+    if (!this.audioUnlocked) return;
+    if (!this.damageSound && this.selectedTheme) {
+        this.damageSound = new Audio(this.selectedTheme.damageSoundSrc);
+        this.damageSound.volume = 0.7;
     }
+    if (this.damageSound) {
+        this.damageSound.currentTime = 0;
+        this.damageSound.play();
+    }
+}
 
     /**
      * Startet den asynchronen Spielprozess.
@@ -386,6 +401,7 @@ export class Game {
                     this.score += 10;
                     // Zurück zum Original-Code
                     this.player.velocityY = -10; 
+                    this.playScoreSound(); // <-- POSITIVER SOUND
                      
                     
                     if (this.selectedTheme) {
@@ -402,7 +418,7 @@ export class Game {
                 } else {
                     this.enemies.splice(index, 1);
                     this.triggerShake(200);
-                    this.playHitSound();
+                    this.playDamageSound();
                 }
             }
         });

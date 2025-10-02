@@ -53,6 +53,8 @@ export interface GameTheme {
     winVideoSrc: string;
     /** Der Pfad zur Musik */
     backgroundMusicSrc: string;
+    scoreSoundSrc: string; // <-- Der POSITIVE Sound fürs Punkten
+    damageSoundSrc: string; // <-- Der NEGATIVE Sound für Schaden
 }
 
 /**
@@ -87,7 +89,9 @@ export const themes: { [key: string]: GameTheme } = {
         backgroundColor: '#FFC0CB',
         backgroundImageSrc: 'assets/prinzessin_BG.png',
         winVideoSrc: 'assets/princess_win.webm',
-        backgroundMusicSrc: 'assets/princess_theme.mp3'
+        backgroundMusicSrc: 'assets/princess_theme.mp3',
+        scoreSoundSrc: 'assets/ghost.mp3',     // POSITIV
+        damageSoundSrc: 'assets/Bounce.mp3'     // NEGATIV (der alte "hit sound")
     },
     'ninja': {
         playerAnimations: {
@@ -109,6 +113,8 @@ export const themes: { [key: string]: GameTheme } = {
         backgroundColor: '#4F4F4F',
         backgroundImageSrc: 'assets/ninja_BG.png',
         winVideoSrc: 'assets/ninja_win.webm',
-        backgroundMusicSrc: 'assets/ninja_theme.mp3' 
+        backgroundMusicSrc: 'assets/ninja_theme.mp3',
+        scoreSoundSrc: 'assets/bird.mp3',     // POSITIV
+        damageSoundSrc: 'assets/Bounce.mp3'     // NEGATIV (der alte "hit sound") 
     }
 };

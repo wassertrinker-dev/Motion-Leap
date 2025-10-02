@@ -29,6 +29,8 @@ export class Game {
         this.player = null;
         /** Die Instanz für den scrollenden Parallax-Hintergrund. */
         this.background = null;
+        this.scoreSound = null; // <-- Für den positiven Effekt
+        this.damageSound = null; // <-- Für den negativen Effekt
         /* Die Instanz Musik. */
         this.backgroundMusic = null;
         /** Sound für hit mit gegner. */
@@ -134,21 +136,36 @@ export class Game {
         });
     }
     /**
+     * Spielt den punkte-Sound ab.
+     * Erstellt das Audio-Objekt beim ersten Aufruf selbst.
+     */
+    playScoreSound() {
+        if (!this.audioUnlocked)
+            return;
+        if (!this.scoreSound && this.selectedTheme) {
+            this.scoreSound = new Audio(this.selectedTheme.scoreSoundSrc);
+            this.scoreSound.volume = 0.7;
+        }
+        if (this.scoreSound) {
+            this.scoreSound.currentTime = 0;
+            this.scoreSound.play();
+        }
+    }
+    /**
      * Spielt den Kollisions-Sound ab.
      * Erstellt das Audio-Objekt beim ersten Aufruf selbst.
      */
-    playHitSound() {
-        // Sicherheitscheck: Nur abspielen, wenn der Hauptschalter an ist.
+    playDamageSound() {
         if (!this.audioUnlocked)
             return;
-        // Wenn der Sound noch nicht existiert, erstelle ihn jetzt.
-        if (!this.hitSound) {
-            this.hitSound = new Audio('assets/Bounce.mp3');
-            this.hitSound.volume = 0.7;
+        if (!this.damageSound && this.selectedTheme) {
+            this.damageSound = new Audio(this.selectedTheme.damageSoundSrc);
+            this.damageSound.volume = 0.7;
         }
-        // Spiele den Sound ab (immer von vorne).
-        this.hitSound.currentTime = 0;
-        this.hitSound.play();
+        if (this.damageSound) {
+            this.damageSound.currentTime = 0;
+            this.damageSound.play();
+        }
     }
     /**
      * Startet den asynchronen Spielprozess.
@@ -312,6 +329,7 @@ export class Game {
                     this.score += 10;
                     // Zurück zum Original-Code
                     this.player.velocityY = -10;
+                    this.playScoreSound(); // <-- POSITIVER SOUND
                     if (this.selectedTheme) {
                         const destruction = this.selectedTheme.enemyAsset.destruction;
                         this.particles.push(new Particle(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, destruction.src, destruction.frameCount, destruction.size));
@@ -321,7 +339,7 @@ export class Game {
                 else {
                     this.enemies.splice(index, 1);
                     this.triggerShake(200);
-                    this.playHitSound();
+                    this.playDamageSound();
                 }
             }
         });
