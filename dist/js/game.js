@@ -31,6 +31,10 @@ export class Game {
         this.background = null;
         /* Die Instanz Musik. */
         this.backgroundMusic = null;
+        /** Sound für hit mit gegner. */
+        this.hitSound = null; // Wichtig: Ist am Anfang null
+        /** Ein Flag, das anzeigt, ob der Audio-Kontext des Browsers entsperrt ist. */
+        this.audioUnlocked = false; // <-- Unser neuer Hauptschalter
         /** Das aktuell vom Spieler ausgewählte visuelle Thema. */
         this.selectedTheme = null;
         /** Der Zeitstempel des letzten Frames der Spiel-Schleife. */
@@ -91,6 +95,24 @@ export class Game {
         restartButton.addEventListener('click', this.startGame);
     }
     /**
+     * Entsperrt den Audio-Kontext des Browsers durch Abspielen eines stillen Tons.
+     * Muss durch die erste Nutzerinteraktion ausgelöst werden und läuft nur einmal.
+     */
+    unlockAudio() {
+        if (this.audioUnlocked)
+            return; // Wenn der Schalter schon an ist, nichts tun.
+        console.log('Versuche Audio-Kontext zu entsperren...');
+        const unlockSound = new Audio('assets/unlock.mp3');
+        unlockSound.play()
+            .then(() => {
+            this.audioUnlocked = true; // Hauptschalter auf AN setzen!
+            console.log('Audio-Kontext erfolgreich entsperrt!');
+        })
+            .catch(() => {
+            console.error('Audio-Kontext konnte nicht entsperrt werden.');
+        });
+    }
+    /**
      * Richtet die Klick-Events für die Themenauswahl-Karten ein.
      * Bei Auswahl eines Themas wird der Spieler erstellt und der Start-Button angezeigt.
      * @returns {void}
@@ -98,6 +120,7 @@ export class Game {
     setupThemeSelection() {
         document.querySelectorAll('.theme-choice').forEach(card => {
             card.addEventListener('click', (event) => {
+                this.unlockAudio();
                 const themeName = event.currentTarget.dataset.theme;
                 if (themeName && themes[themeName]) {
                     this.selectedTheme = themes[themeName];
@@ -109,6 +132,23 @@ export class Game {
                 }
             });
         });
+    }
+    /**
+     * Spielt den Kollisions-Sound ab.
+     * Erstellt das Audio-Objekt beim ersten Aufruf selbst.
+     */
+    playHitSound() {
+        // Sicherheitscheck: Nur abspielen, wenn der Hauptschalter an ist.
+        if (!this.audioUnlocked)
+            return;
+        // Wenn der Sound noch nicht existiert, erstelle ihn jetzt.
+        if (!this.hitSound) {
+            this.hitSound = new Audio('assets/Bounce.mp3');
+            this.hitSound.volume = 0.7;
+        }
+        // Spiele den Sound ab (immer von vorne).
+        this.hitSound.currentTime = 0;
+        this.hitSound.play();
     }
     /**
      * Startet den asynchronen Spielprozess.
@@ -281,6 +321,7 @@ export class Game {
                 else {
                     this.enemies.splice(index, 1);
                     this.triggerShake(200);
+                    this.playHitSound();
                 }
             }
         });
