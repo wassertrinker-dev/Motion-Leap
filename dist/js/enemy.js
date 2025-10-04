@@ -45,7 +45,8 @@ export class Enemy {
      * Die Hauptaufgabe dieser Methode ist es, den Gegner um seine `speed` nach links zu bewegen.
      * @returns {void}
      */
-    update() {
-        this.x -= this.speed;
+    update(deltaTime) {
+        const timeFactor = deltaTime / 16.67; // 60 FPS Ziel
+        this.x -= this.speed * timeFactor;
     }
 }

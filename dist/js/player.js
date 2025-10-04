@@ -62,9 +62,12 @@ export class Player {
      * @returns {void}
      */
     update(deltaTime, gameHeight) {
-        // 1. Physik aktualisieren (Gravitation anwenden und Position ändern)
-        this.velocityY += this.gravity;
-        this.y += this.velocityY;
+        // Skalierungsfaktor, um die Bewegung zeitbasiert zu machen.
+        // Wir nehmen an, die ursprünglichen Werte waren für 60 FPS optimiert (~16.67ms pro Frame).
+        const timeFactor = deltaTime / 16.67;
+        // 1. Physik aktualisieren (Gravitation und Position zeitbasiert anwenden)
+        this.velocityY += this.gravity * timeFactor;
+        this.y += this.velocityY * timeFactor;
         // 2. Zustandsübergänge basierend auf der Physik bestimmen
         // Am Boden angekommen
         if (this.y + this.height >= gameHeight && this.velocityY >= 0) {

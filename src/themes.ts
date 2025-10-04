@@ -91,7 +91,7 @@ export const themes: { [key: string]: GameTheme } = {
         winVideoSrc: 'assets/princess_win.webm',
         backgroundMusicSrc: 'assets/princess_theme.mp3',
         scoreSoundSrc: 'assets/ghost.mp3',     // POSITIV
-        damageSoundSrc: 'assets/Bounce.mp3'     // NEGATIV (der alte "hit sound")
+        damageSoundSrc: 'assets/bounce.mp3'     // NEGATIV (der alte "hit sound")
     },
     'ninja': {
         playerAnimations: {
@@ -115,6 +115,6 @@ export const themes: { [key: string]: GameTheme } = {
         winVideoSrc: 'assets/ninja_win.webm',
         backgroundMusicSrc: 'assets/ninja_theme.mp3',
         scoreSoundSrc: 'assets/bird.mp3',     // POSITIV
-        damageSoundSrc: 'assets/Bounce.mp3'     // NEGATIV (der alte "hit sound") 
+        damageSoundSrc: 'assets/bounce.mp3'     // NEGATIV (der alte "hit sound") 
     }
 };

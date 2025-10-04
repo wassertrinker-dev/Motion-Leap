@@ -386,7 +386,7 @@ export class Game {
         
         this.enemies.forEach((enemy, index) => {
             // Zurück zum Original-Code
-            enemy.update();
+            enemy.update(deltaTime);
 
             // Zurück zum Original-Code
             if (this.player &&
