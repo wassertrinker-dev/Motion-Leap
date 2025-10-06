@@ -60,6 +60,8 @@ export class Game {
         this.shakeDuration = 0;
         /** Die Stärke des Screen-Shake-Effekts in Pixeln. */
         this.shakeMagnitude = 5;
+        /** Ein Flag, das den Debug-Modus steuert. Wird über URL-Parameter ?debug=true aktiviert. */
+        this.debugMode = false;
         this.enemies = [];
         this.particles = [];
         window.onload = () => this.init();
@@ -84,7 +86,8 @@ export class Game {
         this.ctx = this.canvas.getContext('2d');
         this.startButton = document.getElementById('startButton');
         this.video = document.getElementById('videoFeed');
-        this.logElement = document.getElementById('log-output');
+        this.logContainer = document.getElementById('log-container');
+        this.logOutputElement = document.getElementById('log-output');
         this.themeSelectionContainer = document.getElementById('theme-selection');
         this.loadingOverlay = document.getElementById('loading-overlay');
         this.progressBar = document.getElementById('progress-bar');
@@ -96,6 +99,10 @@ export class Game {
         this.gameHeight = 600;
         this.canvas.width = this.gameWidth;
         this.canvas.height = this.gameHeight;
+        // Debug-Modus basierend auf URL-Parameter aktivieren
+        const urlParams = new URLSearchParams(window.location.search);
+        this.debugMode = urlParams.get('debug') === 'true';
+        this.logContainer.style.display = this.debugMode ? 'block' : 'none';
         this.enemyTimer = 0;
         this.enemyInterval = 2000;
         this.isGameOver = false;
@@ -456,7 +463,7 @@ Enemies:        ${this.enemies.length}
 Game Over:      ${this.isGameOver}
 FPS:            ${fps}
         `;
-        this.logElement.innerText = logText;
+        this.logOutputElement.innerText = logText;
     }
     /**
      * Die zentrale Spiel-Schleife, die mit `requestAnimationFrame` läuft.
@@ -470,7 +477,9 @@ FPS:            ${fps}
         this.detectJump();
         this.update(deltaTime || 0);
         this.draw();
-        this.updateLog();
+        if (this.debugMode) {
+            this.updateLog();
+        }
         this.animationFrameId = requestAnimationFrame(this.gameLoop.bind(this)); // speichern der FrameID
     }
     /**
