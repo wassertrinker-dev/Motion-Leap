@@ -325,7 +325,8 @@ export class Game {
                 this.player.y < enemy.y + enemy.height &&
                 this.player.y + this.player.height > enemy.y) {
                 const playerBottomLastFrame = this.player.y + this.player.height - this.player.velocityY;
-                if (this.player.velocityY > 0 && playerBottomLastFrame <= enemy.y) {
+                const verticalTolerance = 5; // 5 pixels of tolerance
+                if (this.player.velocityY > 0 && playerBottomLastFrame <= enemy.y + verticalTolerance) {
                     this.score += 10;
                     // Zurück zum Original-Code
                     this.player.velocityY = -10;
