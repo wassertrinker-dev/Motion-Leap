@@ -225,7 +225,9 @@ export class Game {
                 }
                 this.updateProgress(100, 'Spiel startet!');
                 yield new Promise(resolve => setTimeout(resolve, 300)); // Kurze Pause, damit der User 100% sieht
-                this.gameLoop(0);
+                // Setzt den Startzeitpunkt für die erste DeltaTime-Berechnung korrekt.
+                this.lastTime = performance.now();
+                this.animationFrameId = requestAnimationFrame(this.gameLoop.bind(this));
             }
             catch (error) {
                 console.error('Fehler beim Starten des Spiels oder der Kamera:', error);
