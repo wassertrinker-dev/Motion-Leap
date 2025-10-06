@@ -293,7 +293,6 @@ export class Game {
 
             this.score = 0;
             this.timeRemaining = this.levelTime;
-            this.isGameOver = false;
             this.enemies = [];
             this.enemyTimer = 0;
 
@@ -306,6 +305,7 @@ export class Game {
             await new Promise(resolve => setTimeout(resolve, 300)); // Kurze Pause, damit der User 100% sieht
 
             // Setzt den Startzeitpunkt für die erste DeltaTime-Berechnung korrekt.
+            this.isGameOver = false; // JETZT das Spiel als "aktiv" markieren.
             this.lastTime = performance.now();
             this.animationFrameId = requestAnimationFrame(this.gameLoop.bind(this));
 
@@ -574,8 +574,17 @@ FPS:            ${fps}
      */
     gameLoop(timestamp: number): void {
         this.prevTime = this.lastTime;
-        const deltaTime = timestamp - this.lastTime;
+        let deltaTime = timestamp - this.lastTime;
         this.lastTime = timestamp;
+
+        // --- BUG FIX ---
+        // Cap deltaTime to prevent large jumps on the first frame or after lag.
+        const MAX_DELTA_TIME = 100; // Max time step in ms (e.g., 10 FPS)
+        if (deltaTime > MAX_DELTA_TIME) {
+            console.warn(`[PERF] Large deltaTime detected: ${deltaTime.toFixed(0)}ms. Capping to ${MAX_DELTA_TIME}ms.`);
+            deltaTime = MAX_DELTA_TIME;
+        }
+        // --- END BUG FIX ---
 
         this.detectJump();
         this.update(deltaTime || 0);
