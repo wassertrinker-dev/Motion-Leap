@@ -42,6 +42,7 @@ export class Game {
     endScreenOverlay!: HTMLElement;
     /** Das Video-Element, das auf dem End-Screen abgespielt wird. */
     winVideo!: HTMLVideoElement;
+    loadingHowtoImage!: HTMLImageElement;
 
     // --- Spiel-Dimensionen ---
     /** Die feste Breite des Spielbereichs in Pixeln. */
@@ -146,6 +147,7 @@ export class Game {
         this.progressText = document.getElementById('progress-text')!;
         this.endScreenOverlay = document.getElementById('end-screen-overlay')!;
         this.winVideo = document.getElementById('win-video') as HTMLVideoElement;
+        this.loadingHowtoImage = document.getElementById('loading-howto-image') as HTMLImageElement;
 
         const restartButton = document.getElementById('restart-button')!;
         
@@ -270,6 +272,7 @@ export class Game {
 
         // --- Ladebildschirm einrichten ---
         this.loadingOverlay.style.display = 'flex';
+        this.loadingHowtoImage.style.display = 'block';
         this.updateProgress(0, 'Starte...');
 
         try {
@@ -311,6 +314,7 @@ export class Game {
             alert('Ohne Kamerazugriff kann das Spiel nicht gestartet werden.');
         } finally {
             this.loadingOverlay.style.display = 'none';
+            this.loadingHowtoImage.style.display = 'none';
         }
     }
     

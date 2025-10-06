@@ -94,6 +94,7 @@ export class Game {
         this.progressText = document.getElementById('progress-text');
         this.endScreenOverlay = document.getElementById('end-screen-overlay');
         this.winVideo = document.getElementById('win-video');
+        this.loadingHowtoImage = document.getElementById('loading-howto-image');
         const restartButton = document.getElementById('restart-button');
         this.gameWidth = 800;
         this.gameHeight = 600;
@@ -207,6 +208,7 @@ export class Game {
             }
             // --- Ladebildschirm einrichten ---
             this.loadingOverlay.style.display = 'flex';
+            this.loadingHowtoImage.style.display = 'block';
             this.updateProgress(0, 'Starte...');
             try {
                 // --- Phase 1: Kamera initialisieren (0% -> 10%) ---
@@ -242,6 +244,7 @@ export class Game {
             }
             finally {
                 this.loadingOverlay.style.display = 'none';
+                this.loadingHowtoImage.style.display = 'none';
             }
         });
     }
