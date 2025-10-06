@@ -65,6 +65,15 @@ export class Game {
         window.onload = () => this.init();
     }
     /**
+     * Aktualisiert den Ladebalken und den zugehörigen Text.
+     * @param {number} percent - Der prozentuale Fortschritt (0-100).
+     * @param {string} text - Der Text, der auf dem Ladebildschirm angezeigt wird.
+     */
+    updateProgress(percent, text) {
+        this.progressBar.style.width = `${percent}%`;
+        this.progressText.innerText = text;
+    }
+    /**
      * Initialisiert das Spiel, nachdem die HTML-Seite vollständig geladen ist.
      * Holt alle notwendigen HTML-Elemente, setzt die Spiel-Dimensionen
      * und richtet die initialen Event-Listener ein.
@@ -175,30 +184,34 @@ export class Game {
      */
     startGame() {
         return __awaiter(this, void 0, void 0, function* () {
-            //Stoppt eine eventuell noch laufende, alte Spiel-Schleife.
+            // Stoppt eine eventuell noch laufende, alte Spiel-Schleife.
             cancelAnimationFrame(this.animationFrameId);
-            // Starte die Musik, wenn sie noch nicht initialisiert wurde.
-            // Dieser Block wird nur beim allerersten Spielstart ausgeführt und bei "Level wiederholen" übersprungen.
+            // Musik-Management
             if (!this.backgroundMusic && this.selectedTheme) {
                 this.backgroundMusic = new Audio(this.selectedTheme.backgroundMusicSrc);
-                this.backgroundMusic.loop = true; // Musik soll in einer Schleife laufen
-                this.backgroundMusic.volume = 0.5; // Lautstärke auf 50% (kannst du anpassen)
+                this.backgroundMusic.loop = true;
+                this.backgroundMusic.volume = 0.5;
                 this.backgroundMusic.play().catch(error => {
-                    // Fängt Fehler ab, falls der Browser das Abspielen doch blockiert.
                     console.warn("Hintergrundmusik konnte nicht automatisch gestartet werden:", error);
                 });
             }
             if (this.endScreenOverlay) {
                 this.endScreenOverlay.style.display = 'none';
             }
+            // --- Ladebildschirm einrichten ---
             this.loadingOverlay.style.display = 'flex';
-            this.progressBar.style.width = '0%';
-            this.progressText.innerText = '0%';
+            this.updateProgress(0, 'Starte...');
             try {
+                // --- Phase 1: Kamera initialisieren (0% -> 10%) ---
+                this.updateProgress(5, 'Kamera wird initialisiert...');
                 const stream = yield navigator.mediaDevices.getUserMedia({ video: true });
                 this.video.srcObject = stream;
                 yield new Promise((resolve) => { this.video.onloadedmetadata = resolve; });
+                this.updateProgress(10, 'Kamera ist bereit.');
+                // --- Phase 2: KI-Modell laden (10% -> 90%) ---
                 yield this.setupPoseDetection();
+                this.updateProgress(90, 'Modell wird vorbereitet...');
+                // --- Phase 3: Spiel finalisieren (90% -> 100%) ---
                 this.canvas.style.display = 'block';
                 this.startButton.style.display = 'none';
                 this.score = 0;
@@ -207,10 +220,11 @@ export class Game {
                 this.enemies = [];
                 this.enemyTimer = 0;
                 if (this.player) {
-                    // Zurück zum Original-Code
                     this.player.y = 0;
                     this.player.velocityY = 0;
                 }
+                this.updateProgress(100, 'Spiel startet!');
+                yield new Promise(resolve => setTimeout(resolve, 300)); // Kurze Pause, damit der User 100% sieht
                 this.gameLoop(0);
             }
             catch (error) {
@@ -234,12 +248,12 @@ export class Game {
             const model = poseDetection.SupportedModels.MoveNet;
             this.poseDetector = yield poseDetection.createDetector(model, {
                 onProgress: (fraction) => {
-                    const percent = Math.floor(fraction * 100);
-                    this.progressBar.style.width = `${percent}%`;
-                    this.progressText.innerText = `${percent}%`;
+                    const basePercent = 10;
+                    const range = 80;
+                    const percent = Math.floor(basePercent + fraction * range);
+                    this.updateProgress(percent, `Lade KI-Modell (${percent}%)...`);
                 }
             });
-            console.log('Posen-Modell geladen.');
         });
     }
     /**
