@@ -471,7 +471,55 @@ export class Game {
      * @returns {void}
      */
     showEndScreen(): void {
+        // Versteckt den "Next Level"-Button, da die Funktion nicht implementiert ist.
+        const nextLevelButton = document.getElementById('next-level-button');
+        if (nextLevelButton) {
+            nextLevelButton.style.display = 'none';
+        }
+
         if (!this.selectedTheme) return;
+
+        // Entfernt alte Nachrichten, falls das Spiel neugestartet wurde.
+        const existingContent = this.endScreenOverlay.querySelector('#end-screen-text-container');
+        if (existingContent) {
+            existingContent.remove();
+        }
+
+        // Erstellt einen Container für die Texte, um sie zu zentrieren und zu stylen.
+        const textContainer = document.createElement('div');
+        textContainer.id = 'end-screen-text-container';
+        Object.assign(textContainer.style, {
+            position: 'absolute',
+            color: 'white',
+            textAlign: 'center',
+            textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
+            zIndex: '10', // Stellt sicher, dass der Text über dem Video liegt.
+            fontFamily: 'Arial, sans-serif'
+        });
+
+        // Erstellt die "Gut gemacht!"-Nachricht.
+        const messageElement = document.createElement('h2');
+        messageElement.innerText = 'Gut gemacht!';
+        Object.assign(messageElement.style, {
+            fontSize: '60px',
+            margin: '0',
+            padding: '0'
+        });
+
+        // Erstellt die Punkteanzeige.
+        const scoreElement = document.createElement('p');
+        scoreElement.innerText = `Punkte: ${this.score}`;
+        Object.assign(scoreElement.style, {
+            fontSize: '40px',
+            margin: '20px 0 0 0'
+        });
+
+        // Fügt die Elemente zum Container und den Container zum Overlay hinzu.
+        textContainer.appendChild(messageElement);
+        textContainer.appendChild(scoreElement);
+        this.endScreenOverlay.appendChild(textContainer);
+
+        // Bestehender Code zum Anzeigen des Overlays.
         this.endScreenOverlay.style.backgroundImage = `url(${this.selectedTheme.backgroundImageSrc})`;
         this.winVideo.src = this.selectedTheme.winVideoSrc;
         this.winVideo.play();
