@@ -1,4 +1,3 @@
-// in /src/game.ts (VOLLSTÄNDIGE & KORREKTE VERSION)
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -13,6 +12,7 @@ import { Enemy } from './enemy.js';
 import { themes } from './themes.js';
 import { Particle } from './particle.js';
 import { Background } from './background.js';
+import { text } from './localization.js';
 /**
  * Die Hauptklasse, die das gesamte Spiel orchestriert.
  * Verwaltet die Spiel-Schleife, den Zustand, alle Spielobjekte, das Rendering und die Kamera-Eingabe.
@@ -82,6 +82,19 @@ export class Game {
      * @returns {void}
      */
     init() {
+        // --- 1. Statische Texte der HTML-Seite übersetzen ---
+        document.title = text.pageTitle;
+        // Selektiere und übersetze die Elemente. 
+        // `as HTMLElement` wird verwendet, um TypeScript mitzuteilen, dass wir wissen, dass diese Elemente existieren.
+        document.querySelector('#loading-overlay h2').innerText = text.loadingTitle;
+        document.querySelector('#log-container h2').innerText = text.debugLogTitle;
+        document.querySelector('#theme-selection h2').innerText = text.themeSelectionTitle;
+        document.querySelector('[data-theme="maerchen"] h3').innerText = text.themeNameFairyTale;
+        document.querySelector('[data-theme="maerchen"] img').alt = text.altFairyTale;
+        document.querySelector('[data-theme="ninja"] h3').innerText = text.themeNameNinja;
+        document.querySelector('[data-theme="ninja"] img').alt = text.altNinja;
+        document.getElementById('next-level-button').innerText = text.nextLevelButton;
+        // --- 2. Elemente für das Spiel holen ---
         this.canvas = document.getElementById('gameCanvas');
         this.ctx = this.canvas.getContext('2d');
         this.startButton = document.getElementById('startButton');
@@ -96,11 +109,14 @@ export class Game {
         this.winVideo = document.getElementById('win-video');
         this.loadingHowtoImage = document.getElementById('loading-howto-image');
         const restartButton = document.getElementById('restart-button');
+        // --- 3. Button-Texte setzen ---
+        this.startButton.innerText = text.startButton;
+        restartButton.innerText = text.restartButton;
+        // --- 4. Spiel-Setup ---
         this.gameWidth = 800;
         this.gameHeight = 600;
         this.canvas.width = this.gameWidth;
         this.canvas.height = this.gameHeight;
-        // Debug-Modus basierend auf URL-Parameter aktivieren
         const urlParams = new URLSearchParams(window.location.search);
         this.debugMode = urlParams.get('debug') === 'true';
         this.logContainer.style.display = this.debugMode ? 'block' : 'none';
@@ -108,9 +124,9 @@ export class Game {
         this.enemyInterval = 2000;
         this.isGameOver = false;
         this.startGame = this.startGame.bind(this);
+        // --- 5. Event-Listener registrieren ---
         this.setupThemeSelection();
         this.startButton.addEventListener('click', this.startGame);
-        // Die einzige logische Änderung: Den Neustart-Button funktionsfähig machen.
         restartButton.addEventListener('click', this.startGame);
     }
     /**
@@ -209,17 +225,17 @@ export class Game {
             // --- Ladebildschirm einrichten ---
             this.loadingOverlay.style.display = 'flex';
             this.loadingHowtoImage.style.display = 'block';
-            this.updateProgress(0, 'Starte...');
+            this.updateProgress(0, text.starting);
             try {
                 // --- Phase 1: Kamera initialisieren (0% -> 10%) ---
-                this.updateProgress(5, 'Kamera wird initialisiert...');
+                this.updateProgress(5, text.initCamera);
                 const stream = yield navigator.mediaDevices.getUserMedia({ video: true });
                 this.video.srcObject = stream;
                 yield new Promise((resolve) => { this.video.onloadedmetadata = resolve; });
-                this.updateProgress(10, 'Kamera ist bereit.');
+                this.updateProgress(10, text.cameraReady);
                 // --- Phase 2: KI-Modell laden (10% -> 90%) ---
                 yield this.setupPoseDetection();
-                this.updateProgress(90, 'Modell wird vorbereitet...');
+                this.updateProgress(90, text.modelReady);
                 // --- Phase 3: Spiel finalisieren (90% -> 100%) ---
                 this.canvas.style.display = 'block';
                 this.startButton.style.display = 'none';
@@ -231,7 +247,7 @@ export class Game {
                     this.player.y = 0;
                     this.player.velocityY = 0;
                 }
-                this.updateProgress(100, 'Spiel startet!');
+                this.updateProgress(100, text.gameStarts);
                 yield new Promise(resolve => setTimeout(resolve, 300)); // Kurze Pause, damit der User 100% sieht
                 // Setzt den Startzeitpunkt für die erste DeltaTime-Berechnung korrekt.
                 this.isGameOver = false; // JETZT das Spiel als "aktiv" markieren.
@@ -240,7 +256,7 @@ export class Game {
             }
             catch (error) {
                 console.error('Fehler beim Starten des Spiels oder der Kamera:', error);
-                alert('Ohne Kamerazugriff kann das Spiel nicht gestartet werden.');
+                alert(text.noCamera);
             }
             finally {
                 this.loadingOverlay.style.display = 'none';
@@ -263,7 +279,7 @@ export class Game {
                     const basePercent = 10;
                     const range = 80;
                     const percent = Math.floor(basePercent + fraction * range);
-                    this.updateProgress(percent, `Lade KI-Modell (${percent}%)...`);
+                    this.updateProgress(percent, text.loadingModel(percent));
                 }
             });
         });
@@ -408,7 +424,7 @@ export class Game {
         });
         // Erstellt die "Gut gemacht!"-Nachricht.
         const messageElement = document.createElement('h2');
-        messageElement.innerText = 'Gut gemacht!';
+        messageElement.innerText = text.winMessage;
         Object.assign(messageElement.style, {
             fontSize: '60px',
             margin: '0',
@@ -416,7 +432,7 @@ export class Game {
         });
         // Erstellt die Punkteanzeige.
         const scoreElement = document.createElement('p');
-        scoreElement.innerText = `Punkte: ${this.score}`;
+        scoreElement.innerText = text.finalScore(this.score);
         Object.assign(scoreElement.style, {
             fontSize: '40px',
             margin: '20px 0 0 0'
@@ -469,8 +485,8 @@ export class Game {
         this.ctx.textAlign = 'left';
         const minutes = Math.floor(this.timeRemaining / 60);
         const seconds = Math.floor(this.timeRemaining % 60);
-        this.ctx.fillText(`Zeit: ${minutes}:${seconds.toString().padStart(2, '0')}`, 20, 40);
-        this.ctx.fillText(`Score: ${this.score}`, 20, 80);
+        this.ctx.fillText(text.timeLabel(minutes, seconds.toString().padStart(2, '0')), 20, 40);
+        this.ctx.fillText(text.ingameScore(this.score), 20, 80);
     }
     /**
      * Aktualisiert den Inhalt des Debug-Log-Fensters mit Echtzeit-Daten.
