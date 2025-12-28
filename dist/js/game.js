@@ -1,18 +1,10 @@
-var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
-    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
-    return new (P || (P = Promise))(function (resolve, reject) {
-        function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
-        function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
-        step((generator = generator.apply(thisArg, _arguments || [])).next());
-    });
-};
 import { Player } from './player.js';
 import { Enemy } from './enemy.js';
 import { themes } from './themes.js';
 import { Particle } from './particle.js';
 import { Background } from './background.js';
 import { text } from './localization.js';
+import { levels } from './levels.js'; // Importiere Level-Konfiguration
 /**
  * Die Hauptklasse, die das gesamte Spiel orchestriert.
  * Verwaltet die Spiel-Schleife, den Zustand, alle Spielobjekte, das Rendering und die Kamera-Eingabe.
@@ -49,6 +41,10 @@ export class Game {
         this.animationFrameId = 0; // <-- DIESE ZEILE HINZUFÜGEN
         /** Die verbleibende Zeit im aktuellen Level in Sekunden. */
         this.timeRemaining = 0;
+        /** Die aktuelle Levelnummer. */
+        this.currentLevelNumber = 1;
+        /** Die Konfiguration des aktuellen Levels. */
+        this.currentLevel = null;
         /** Die durchschnittliche Y-Position der Schultern aus dem letzten Frame. */
         this.lastShoulderY = null;
         /** Die Empfindlichkeit für die Sprungerkennung. Ein höherer Wert erfordert eine schnellere Bewegung. */
@@ -109,9 +105,11 @@ export class Game {
         this.winVideo = document.getElementById('win-video');
         this.loadingHowtoImage = document.getElementById('loading-howto-image');
         const restartButton = document.getElementById('restart-button');
+        const nextLevelButton = document.getElementById('next-level-button'); // Get the next level button
         // --- 3. Button-Texte setzen ---
         this.startButton.innerText = text.startButton;
         restartButton.innerText = text.restartButton;
+        nextLevelButton.innerText = text.nextLevelButton; // Set text for next level button
         // --- 4. Spiel-Setup ---
         this.gameWidth = 800;
         this.gameHeight = 600;
@@ -126,8 +124,9 @@ export class Game {
         this.startGame = this.startGame.bind(this);
         // --- 5. Event-Listener registrieren ---
         this.setupThemeSelection();
-        this.startButton.addEventListener('click', this.startGame);
-        restartButton.addEventListener('click', this.startGame);
+        this.startButton.addEventListener('click', () => this.startGame(1)); // Start first level
+        restartButton.addEventListener('click', () => this.startGame(1)); // Restart first level
+        nextLevelButton.addEventListener('click', () => this.startGame(this.currentLevelNumber + 1)); // Go to next level
     }
     /**
      * Entsperrt den Audio-Kontext des Browsers durch Abspielen eines stillen Tons.
@@ -160,10 +159,15 @@ export class Game {
                 if (themeName && themes[themeName]) {
                     this.selectedTheme = themes[themeName];
                     document.body.style.backgroundColor = this.selectedTheme.backgroundColor;
+                    // Lade themenspezifische Assets
+                    this.background = new Background(this.gameWidth, this.gameHeight, this.selectedTheme.backgroundImageSrc, 1);
+                    this.backgroundMusic = new Audio(this.selectedTheme.backgroundMusicSrc);
+                    this.backgroundMusic.loop = true;
+                    this.backgroundMusic.volume = 0.5;
+                    this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerAnimations);
+                    // Zeige den Start-Button, verberge die Themenauswahl
                     this.themeSelectionContainer.style.display = 'none';
                     this.startButton.style.display = 'block';
-                    this.background = new Background(this.gameWidth, this.gameHeight, this.selectedTheme.backgroundImageSrc, 1);
-                    this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerAnimations);
                 }
             });
         });
@@ -204,65 +208,72 @@ export class Game {
      * Startet den asynchronen Spielprozess.
      * Kümmert sich um Kamerazugriff, Laden der KI-Modelle und Zurücksetzen des Spielzustands.
      * @async
+     * @param {number} levelNumber - Die Nummer des zu startenden Levels.
      * @returns {Promise<void>}
      */
-    startGame() {
-        return __awaiter(this, void 0, void 0, function* () {
-            // Stoppt eine eventuell noch laufende, alte Spiel-Schleife.
-            cancelAnimationFrame(this.animationFrameId);
-            // Musik-Management
-            if (!this.backgroundMusic && this.selectedTheme) {
-                this.backgroundMusic = new Audio(this.selectedTheme.backgroundMusicSrc);
-                this.backgroundMusic.loop = true;
-                this.backgroundMusic.volume = 0.5;
-                this.backgroundMusic.play().catch(error => {
-                    console.warn("Hintergrundmusik konnte nicht automatisch gestartet werden:", error);
-                });
+    async startGame(levelNumber = 1) {
+        // Stoppt eine eventuell noch laufende, alte Spiel-Schleife.
+        cancelAnimationFrame(this.animationFrameId);
+        // Level-Konfiguration laden
+        this.currentLevel = levels.find(lvl => lvl.levelNumber === levelNumber) || levels[0];
+        this.currentLevelNumber = levelNumber;
+        // Musik abspielen, falls sie existiert und nicht schon läuft
+        if (this.backgroundMusic && this.backgroundMusic.paused) {
+            this.backgroundMusic.play().catch(error => {
+                console.warn("Hintergrundmusik konnte nicht automatisch gestartet werden:", error);
+            });
+        }
+        if (this.endScreenOverlay) {
+            this.endScreenOverlay.style.display = 'none';
+        }
+        // --- Ladebildschirm einrichten ---
+        this.loadingOverlay.style.display = 'flex';
+        this.loadingHowtoImage.style.display = 'block';
+        this.updateProgress(0, text.starting);
+        try {
+            // --- Phase 1: Kamera initialisieren (0% -> 10%) ---
+            this.updateProgress(5, text.initCamera);
+            const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+            this.video.srcObject = stream;
+            await new Promise((resolve) => { this.video.onloadedmetadata = resolve; });
+            this.updateProgress(10, text.cameraReady);
+            // --- Phase 2: KI-Modell laden (10% -> 90%) ---
+            await this.setupPoseDetection();
+            this.updateProgress(90, text.modelReady);
+            // --- Phase 3: Spiel finalisieren (90% -> 100%) ---
+            this.canvas.style.display = 'block';
+            this.startButton.style.display = 'none';
+            this.score = 0;
+            this.enemies = [];
+            this.enemyTimer = 0;
+            if (this.currentLevel) {
+                this.levelTime = this.currentLevel.duration;
+                this.enemyInterval = this.currentLevel.enemyInterval;
             }
-            if (this.endScreenOverlay) {
-                this.endScreenOverlay.style.display = 'none';
+            this.timeRemaining = this.levelTime;
+            if (!this.player && this.selectedTheme) {
+                this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerAnimations);
             }
-            // --- Ladebildschirm einrichten ---
-            this.loadingOverlay.style.display = 'flex';
-            this.loadingHowtoImage.style.display = 'block';
-            this.updateProgress(0, text.starting);
-            try {
-                // --- Phase 1: Kamera initialisieren (0% -> 10%) ---
-                this.updateProgress(5, text.initCamera);
-                const stream = yield navigator.mediaDevices.getUserMedia({ video: true });
-                this.video.srcObject = stream;
-                yield new Promise((resolve) => { this.video.onloadedmetadata = resolve; });
-                this.updateProgress(10, text.cameraReady);
-                // --- Phase 2: KI-Modell laden (10% -> 90%) ---
-                yield this.setupPoseDetection();
-                this.updateProgress(90, text.modelReady);
-                // --- Phase 3: Spiel finalisieren (90% -> 100%) ---
-                this.canvas.style.display = 'block';
-                this.startButton.style.display = 'none';
-                this.score = 0;
-                this.timeRemaining = this.levelTime;
-                this.enemies = [];
-                this.enemyTimer = 0;
-                if (this.player) {
-                    this.player.y = 0;
-                    this.player.velocityY = 0;
-                }
-                this.updateProgress(100, text.gameStarts);
-                yield new Promise(resolve => setTimeout(resolve, 300)); // Kurze Pause, damit der User 100% sieht
-                // Setzt den Startzeitpunkt für die erste DeltaTime-Berechnung korrekt.
-                this.isGameOver = false; // JETZT das Spiel als "aktiv" markieren.
-                this.lastTime = performance.now();
-                this.animationFrameId = requestAnimationFrame(this.gameLoop.bind(this));
+            else if (this.player) {
+                this.player.x = 50;
+                this.player.y = 0;
+                this.player.velocityY = 0;
+                this.player.setState('FALLING');
             }
-            catch (error) {
-                console.error('Fehler beim Starten des Spiels oder der Kamera:', error);
-                alert(text.noCamera);
-            }
-            finally {
-                this.loadingOverlay.style.display = 'none';
-                this.loadingHowtoImage.style.display = 'none';
-            }
-        });
+            this.updateProgress(100, text.gameStarts);
+            await new Promise(resolve => setTimeout(resolve, 300));
+            this.isGameOver = false;
+            this.lastTime = performance.now();
+            this.animationFrameId = requestAnimationFrame(this.gameLoop.bind(this));
+        }
+        catch (error) {
+            console.error('Fehler beim Starten des Spiels oder der Kamera:', error);
+            alert(text.noCamera);
+        }
+        finally {
+            this.loadingOverlay.style.display = 'none';
+            this.loadingHowtoImage.style.display = 'none';
+        }
     }
     /**
      * Lädt und konfiguriert das MoveNet-Modell für die Posenerkennung.
@@ -270,18 +281,16 @@ export class Game {
      * @async
      * @returns {Promise<void>}
      */
-    setupPoseDetection() {
-        return __awaiter(this, void 0, void 0, function* () {
-            yield tf.ready();
-            const model = poseDetection.SupportedModels.MoveNet;
-            this.poseDetector = yield poseDetection.createDetector(model, {
-                onProgress: (fraction) => {
-                    const basePercent = 10;
-                    const range = 80;
-                    const percent = Math.floor(basePercent + fraction * range);
-                    this.updateProgress(percent, text.loadingModel(percent));
-                }
-            });
+    async setupPoseDetection() {
+        await tf.ready();
+        const model = poseDetection.SupportedModels.MoveNet;
+        this.poseDetector = await poseDetection.createDetector(model, {
+            onProgress: (fraction) => {
+                const basePercent = 10;
+                const range = 80;
+                const percent = Math.floor(basePercent + fraction * range);
+                this.updateProgress(percent, text.loadingModel(percent));
+            }
         });
     }
     /**
@@ -290,36 +299,36 @@ export class Game {
      * @async
      * @returns {Promise<void>}
      */
-    detectJump() {
-        return __awaiter(this, void 0, void 0, function* () {
-            if (!this.poseDetector || this.video.paused || this.video.ended || !this.player)
-                return;
-            const poses = yield this.poseDetector.estimatePoses(this.video);
-            if (poses && poses.length > 0) {
-                const keypoints = poses[0].keypoints;
-                const leftShoulder = keypoints.find(p => p.name === 'left_shoulder');
-                const rightShoulder = keypoints.find(p => p.name === 'right_shoulder');
-                if (leftShoulder && rightShoulder && leftShoulder.score > 0.5 && rightShoulder.score > 0.5) {
-                    const currentShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
-                    if (this.lastShoulderY !== null) {
-                        const movement = this.lastShoulderY - currentShoulderY;
-                        this.lastJumpMovement = movement;
-                        if (movement > this.JUMP_SENSITIVITY) {
-                            this.player.jump();
-                        }
+    async detectJump() {
+        if (!this.poseDetector || this.video.paused || this.video.ended || !this.player)
+            return;
+        const poses = await this.poseDetector.estimatePoses(this.video);
+        if (poses && poses.length > 0) {
+            const keypoints = poses[0].keypoints;
+            const leftShoulder = keypoints.find(p => p.name === 'left_shoulder');
+            const rightShoulder = keypoints.find(p => p.name === 'right_shoulder');
+            if (leftShoulder && rightShoulder && leftShoulder.score > 0.5 && rightShoulder.score > 0.5) {
+                const currentShoulderY = (leftShoulder.y + rightShoulder.y) / 2;
+                if (this.lastShoulderY !== null) {
+                    const movement = this.lastShoulderY - currentShoulderY;
+                    this.lastJumpMovement = movement;
+                    if (movement > this.JUMP_SENSITIVITY) {
+                        this.player.jump();
                     }
-                    this.lastShoulderY = currentShoulderY;
                 }
+                this.lastShoulderY = currentShoulderY;
             }
-        });
+        }
     }
     /**
      * Erstellt einen neuen Gegner basierend auf dem ausgewählten Thema und fügt ihn zum Spiel hinzu.
      * @returns {void}
      */
     addEnemy() {
-        if (this.selectedTheme) {
-            this.enemies.push(new Enemy(this.gameWidth, this.gameHeight, this.selectedTheme.enemyAsset));
+        if (this.selectedTheme && this.currentLevel) {
+            const speedBehavior = this.currentLevel.enemyBehavior;
+            const visualAsset = this.selectedTheme.enemyBehavior;
+            this.enemies.push(new Enemy(this.gameWidth, this.gameHeight, speedBehavior, visualAsset));
         }
     }
     /**
@@ -374,7 +383,7 @@ export class Game {
                     this.player.velocityY = -10;
                     this.playScoreSound(); // <-- POSITIVER SOUND
                     if (this.selectedTheme) {
-                        const destruction = this.selectedTheme.enemyAsset.destruction;
+                        const destruction = this.selectedTheme.enemyBehavior.destruction;
                         this.particles.push(new Particle(enemy.x + enemy.width / 2, enemy.y + enemy.height / 2, destruction.src, destruction.frameCount, destruction.size));
                     }
                     this.enemies.splice(index, 1);
@@ -399,30 +408,32 @@ export class Game {
      * @returns {void}
      */
     showEndScreen() {
-        // Versteckt den "Next Level"-Button, da die Funktion nicht implementiert ist.
         const nextLevelButton = document.getElementById('next-level-button');
+        const endScreenBox = this.endScreenOverlay.querySelector('.end-screen-box');
         if (nextLevelButton) {
-            nextLevelButton.style.display = 'none';
+            nextLevelButton.style.display = 'none'; // Standardmäßig ausblenden
+            nextLevelButton.disabled = true;
         }
-        if (!this.selectedTheme)
+        const nextLevelExists = levels.some(lvl => lvl.levelNumber === this.currentLevelNumber + 1);
+        if (nextLevelButton && nextLevelExists) {
+            nextLevelButton.style.display = 'inline-block'; // Oder 'block', je nach Styling
+            nextLevelButton.disabled = false;
+        }
+        if (!this.selectedTheme || !this.currentLevel || !endScreenBox)
             return;
-        // Entfernt alte Nachrichten, falls das Spiel neugestartet wurde.
-        const existingContent = this.endScreenOverlay.querySelector('#end-screen-text-container');
+        const existingContent = endScreenBox.querySelector('#end-screen-text-container');
         if (existingContent) {
             existingContent.remove();
         }
-        // Erstellt einen Container für die Texte, um sie zu zentrieren und zu stylen.
         const textContainer = document.createElement('div');
         textContainer.id = 'end-screen-text-container';
         Object.assign(textContainer.style, {
-            position: 'absolute',
             color: 'white',
             textAlign: 'center',
             textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
-            zIndex: '10', // Stellt sicher, dass der Text über dem Video liegt.
-            fontFamily: 'Arial, sans-serif'
+            fontFamily: 'Arial, sans-serif',
+            margin: '20px 0' // Platz zwischen Video und Buttons
         });
-        // Erstellt die "Gut gemacht!"-Nachricht.
         const messageElement = document.createElement('h2');
         messageElement.innerText = text.winMessage;
         Object.assign(messageElement.style, {
@@ -430,18 +441,21 @@ export class Game {
             margin: '0',
             padding: '0'
         });
-        // Erstellt die Punkteanzeige.
         const scoreElement = document.createElement('p');
         scoreElement.innerText = text.finalScore(this.score);
         Object.assign(scoreElement.style, {
             fontSize: '40px',
             margin: '20px 0 0 0'
         });
-        // Fügt die Elemente zum Container und den Container zum Overlay hinzu.
         textContainer.appendChild(messageElement);
         textContainer.appendChild(scoreElement);
-        this.endScreenOverlay.appendChild(textContainer);
-        // Bestehender Code zum Anzeigen des Overlays.
+        const buttonContainer = endScreenBox.querySelector('.button-container');
+        if (buttonContainer) {
+            endScreenBox.insertBefore(textContainer, buttonContainer);
+        }
+        else {
+            endScreenBox.appendChild(textContainer);
+        }
         this.endScreenOverlay.style.backgroundImage = `url(${this.selectedTheme.backgroundImageSrc})`;
         this.winVideo.src = this.selectedTheme.winVideoSrc;
         this.winVideo.play();

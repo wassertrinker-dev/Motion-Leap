@@ -43,18 +43,18 @@ export interface AnimationAssets {
 export interface GameTheme {
     /** Das Objekt, das alle Spieleranimationen für dieses Thema enthält. */
     playerAnimations: AnimationAssets;
-    /** Das Objekt, das alle Eigenschaften des Gegners für dieses Thema enthält. */
-    enemyAsset: EnemyAsset; 
     /** Die Hintergrundfarbe der HTML-Seite, passend zum Thema. */
     backgroundColor: string;
     /** Der Pfad zum Bild für den scrollenden Parallax-Hintergrund. */
     backgroundImageSrc: string;
-    /** Der Pfad zum Video, das auf dem "Level geschafft!"-Bildschirm abgespielt wird. */
-    winVideoSrc: string;
     /** Der Pfad zur Musik */
     backgroundMusicSrc: string;
+    /** Der Pfad zum Video, das auf dem "Level geschafft!"-Bildschirm abgespielt wird. */
+    winVideoSrc: string;
     scoreSoundSrc: string; // <-- Der POSITIVE Sound fürs Punkten
     damageSoundSrc: string; // <-- Der NEGATIVE Sound für Schaden
+    /** Das Objekt, das die Standard-Gegner-Assets für dieses Thema enthält. */
+    enemyBehavior: EnemyAsset;
 }
 
 /**
@@ -75,7 +75,13 @@ export const themes: { [key: string]: GameTheme } = {
             jump: { src: 'assets/princess_jump_1s_scaled_spritesheet.png', frameCount: 8 },
             fall: { src: 'assets/princess_fall_1s_scaled_spritesheet.png', frameCount: 17 },
         },
-        enemyAsset: { 
+        backgroundColor: '#FFC0CB',
+        backgroundImageSrc: 'assets/prinzessin_BG.png',
+        backgroundMusicSrc: 'assets/princess_theme.mp3',
+        winVideoSrc: 'assets/princess_win.webm',
+        scoreSoundSrc: 'assets/ghost.mp3',     // POSITIV
+        damageSoundSrc: 'assets/bounce.mp3',     // NEGATIV (der alte "hit sound")
+        enemyBehavior: {
             src: 'assets/ghost_bubble_tr.png',
             width: 120,
             height: 120,
@@ -85,13 +91,7 @@ export const themes: { [key: string]: GameTheme } = {
                 frameCount: 6,
                 size: 150
             }
-        },
-        backgroundColor: '#FFC0CB',
-        backgroundImageSrc: 'assets/prinzessin_BG.png',
-        winVideoSrc: 'assets/princess_win.webm',
-        backgroundMusicSrc: 'assets/princess_theme.mp3',
-        scoreSoundSrc: 'assets/ghost.mp3',     // POSITIV
-        damageSoundSrc: 'assets/bounce.mp3'     // NEGATIV (der alte "hit sound")
+        }
     },
     'ninja': {
         playerAnimations: {
@@ -99,7 +99,13 @@ export const themes: { [key: string]: GameTheme } = {
             jump: { src: 'assets/ninja_jump_1s_scaled_spritesheet.png', frameCount: 8 },
             fall: { src: 'assets/ninja_fall_1s_scaled_spritesheet.png', frameCount: 17 },
         },
-        enemyAsset: { 
+        backgroundColor: '#4F4F4F',
+        backgroundImageSrc: 'assets/ninja_BG.png',
+        backgroundMusicSrc: 'assets/ninja_theme.mp3',
+        winVideoSrc: 'assets/ninja_win.webm',
+        scoreSoundSrc: 'assets/bird.mp3',     // POSITIV
+        damageSoundSrc: 'assets/bounce.mp3',     // NEGATIV (der alte "hit sound")
+        enemyBehavior: {
             src: 'assets/monk_tra.png',
             width: 120,
             height: 120,
@@ -109,12 +115,6 @@ export const themes: { [key: string]: GameTheme } = {
                 frameCount: 6,
                 size: 150
             }
-        },
-        backgroundColor: '#4F4F4F',
-        backgroundImageSrc: 'assets/ninja_BG.png',
-        winVideoSrc: 'assets/ninja_win.webm',
-        backgroundMusicSrc: 'assets/ninja_theme.mp3',
-        scoreSoundSrc: 'assets/bird.mp3',     // POSITIV
-        damageSoundSrc: 'assets/bounce.mp3'     // NEGATIV (der alte "hit sound") 
+        }
     }
 };

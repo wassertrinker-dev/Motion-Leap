@@ -1,5 +1,6 @@
 // in /src/enemy.ts
 
+import { EnemyBehavior } from './levels.js';
 import { EnemyAsset } from './themes.js';
 
 /**
@@ -24,34 +25,32 @@ export class Enemy {
 
     /**
      * Erstellt eine neue Gegner-Instanz.
-     * Der Gegner wird initial außerhalb des rechten Bildschirmrands platziert und bewegt sich nach links.
-     * Die vertikale Position wird basierend auf der `gameHeight` und einem optionalen Offset berechnet.
-     * @param {number} gameWidth - Die Gesamtbreite des Spielfelds, um die Startposition festzulegen.
-     * @param {number} gameHeight - Die Gesamthöhe des Spielfelds, um die Position am Boden zu berechnen.
-     * @param {EnemyAsset} asset - Das Konfigurationsobjekt aus `themes.ts`, das Bildquelle, Größe und Offset enthält.
+     * @param {number} gameWidth - Die Gesamtbreite des Spielfelds.
+     * @param {number} gameHeight - Die Gesamthöhe des Spielfelds.
+     * @param {EnemyBehavior} speedBehavior - Das Geschwindigkeitsverhalten aus `levels.ts`.
+     * @param {EnemyAsset} visualAsset - Die visuellen Assets aus `themes.ts`.
      */
-    constructor(gameWidth: number, gameHeight: number, asset: EnemyAsset) {
-        this.width = asset.width;
-        this.height = asset.height;
-        this.speed = 4;
+    constructor(gameWidth: number, gameHeight: number, speedBehavior: EnemyBehavior, visualAsset: EnemyAsset) {
+        this.width = visualAsset.width;
+        this.height = visualAsset.height;
+        
+        this.speed = speedBehavior.baseSpeed + (Math.random() * speedBehavior.speedVariance);
+        
         this.x = gameWidth;
         
-        // Berechnet die Y-Position, sodass die Unterkante der Kollisionsbox den Boden berührt,
-        // und wendet dann den themenspezifischen yOffset an, um die Figur ggf. schweben zu lassen.
         const groundPosition = gameHeight - this.height;
-        this.y = groundPosition - (asset.yOffset || 0);
+        this.y = groundPosition - (visualAsset.yOffset || 0);
 
         this.image = new Image();
         this.image.onload = () => {
             this.isImageLoaded = true;
         };
-        this.image.src = asset.src;
+        this.image.src = visualAsset.src;
     }
 
     /**
      * Zeichnet das Bild des Gegners an seiner aktuellen Position auf die Canvas.
-     * Die Methode prüft intern, ob das Bild bereits geladen ist.
-     * @param {CanvasRenderingContext2D} context - Der 2D-Rendering-Kontext der Canvas, auf den gezeichnet werden soll.
+     * @param {CanvasRenderingContext2D} context - Der 2D-Rendering-Kontext der Canvas.
      * @returns {void}
      */
     draw(context: CanvasRenderingContext2D): void {
@@ -62,7 +61,6 @@ export class Enemy {
 
     /**
      * Aktualisiert den Zustand des Gegners für den nächsten Frame.
-     * Die Hauptaufgabe dieser Methode ist es, den Gegner um seine `speed` nach links zu bewegen.
      * @returns {void}
      */
     update(deltaTime: number): void {

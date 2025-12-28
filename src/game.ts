@@ -4,6 +4,7 @@ import { themes, GameTheme } from './themes.js';
 import { Particle } from './particle.js';
 import { Background } from './background.js';
 import { text } from './localization.js';
+import { levels, Level } from './levels.js'; // Importiere Level-Konfiguration
 
 // Deklariert globale Variablen, die von externen Skripten (TensorFlow.js) geladen werden.
 declare const poseDetection: any;
@@ -47,8 +48,8 @@ export class Game {
     /** Die feste Breite des Spielbereichs in Pixeln. */
     gameWidth!: number;
     /** Die feste Höhe des Spielbereichs in Pixeln. */
-    gameHeight!: number;
-
+     gameHeight!: number;
+     
     // --- Spiel-Objekte ---
     /** Die Spielerinstanz. Null, bis ein Thema gewählt wurde. */
     player: Player | null = null;
@@ -87,6 +88,10 @@ export class Game {
     animationFrameId: number = 0; // <-- DIESE ZEILE HINZUFÜGEN
     /** Die verbleibende Zeit im aktuellen Level in Sekunden. */
     timeRemaining: number = 0;
+    /** Die aktuelle Levelnummer. */
+    currentLevelNumber: number = 1;
+    /** Die Konfiguration des aktuellen Levels. */
+    currentLevel: Level | null = null;
 
     // --- Pose Detection ---
     /** Die Instanz des TensorFlow.js Pose-Detektors (MoveNet). */
@@ -164,10 +169,12 @@ export class Game {
         this.loadingHowtoImage = document.getElementById('loading-howto-image') as HTMLImageElement;
 
         const restartButton = document.getElementById('restart-button')! as HTMLButtonElement;
+        const nextLevelButton = document.getElementById('next-level-button')! as HTMLButtonElement; // Get the next level button
 
         // --- 3. Button-Texte setzen ---
         this.startButton.innerText = text.startButton;
         restartButton.innerText = text.restartButton;
+        nextLevelButton.innerText = text.nextLevelButton; // Set text for next level button
         
         // --- 4. Spiel-Setup ---
         this.gameWidth = 800;
@@ -187,8 +194,9 @@ export class Game {
 
         // --- 5. Event-Listener registrieren ---
         this.setupThemeSelection();
-        this.startButton.addEventListener('click', this.startGame);
-        restartButton.addEventListener('click', this.startGame); 
+        this.startButton.addEventListener('click', () => this.startGame(1)); // Start first level
+        restartButton.addEventListener('click', () => this.startGame(1)); // Restart first level
+        nextLevelButton.addEventListener('click', () => this.startGame(this.currentLevelNumber + 1)); // Go to next level
     }
 
     /**
@@ -223,10 +231,18 @@ export class Game {
                 if (themeName && themes[themeName]) {
                     this.selectedTheme = themes[themeName];
                     document.body.style.backgroundColor = this.selectedTheme.backgroundColor;
+
+                    // Lade themenspezifische Assets
+                    this.background = new Background(this.gameWidth, this.gameHeight, this.selectedTheme.backgroundImageSrc, 1);
+                    this.backgroundMusic = new Audio(this.selectedTheme.backgroundMusicSrc);
+                    this.backgroundMusic.loop = true;
+                    this.backgroundMusic.volume = 0.5;
+
+                    this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerAnimations);
+
+                    // Zeige den Start-Button, verberge die Themenauswahl
                     this.themeSelectionContainer.style.display = 'none';
                     this.startButton.style.display = 'block';
-                    this.background = new Background(this.gameWidth, this.gameHeight, this.selectedTheme.backgroundImageSrc, 1);
-                    this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerAnimations);
                 }
             });
         });
@@ -268,17 +284,19 @@ export class Game {
      * Startet den asynchronen Spielprozess.
      * Kümmert sich um Kamerazugriff, Laden der KI-Modelle und Zurücksetzen des Spielzustands.
      * @async
+     * @param {number} levelNumber - Die Nummer des zu startenden Levels.
      * @returns {Promise<void>}
      */
-    async startGame(): Promise<void> {
+    async startGame(levelNumber: number = 1): Promise<void> {
         // Stoppt eine eventuell noch laufende, alte Spiel-Schleife.
         cancelAnimationFrame(this.animationFrameId);
 
-        // Musik-Management
-        if (!this.backgroundMusic && this.selectedTheme) {
-            this.backgroundMusic = new Audio(this.selectedTheme.backgroundMusicSrc);
-            this.backgroundMusic.loop = true;
-            this.backgroundMusic.volume = 0.5;
+        // Level-Konfiguration laden
+        this.currentLevel = levels.find(lvl => lvl.levelNumber === levelNumber) || levels[0];
+        this.currentLevelNumber = levelNumber;
+
+        // Musik abspielen, falls sie existiert und nicht schon läuft
+        if (this.backgroundMusic && this.backgroundMusic.paused) {
             this.backgroundMusic.play().catch(error => {
                 console.warn("Hintergrundmusik konnte nicht automatisch gestartet werden:", error);
             });
@@ -310,20 +328,28 @@ export class Game {
             this.startButton.style.display = 'none';
 
             this.score = 0;
-            this.timeRemaining = this.levelTime;
             this.enemies = [];
             this.enemyTimer = 0;
 
-            if (this.player) {
+            if (this.currentLevel) {
+                this.levelTime = this.currentLevel.duration;
+                this.enemyInterval = this.currentLevel.enemyInterval;
+            }
+            this.timeRemaining = this.levelTime;
+
+            if (!this.player && this.selectedTheme) { 
+                this.player = new Player(this.gameWidth, this.gameHeight, this.selectedTheme.playerAnimations);
+            } else if (this.player) { 
+                this.player.x = 50;
                 this.player.y = 0;
                 this.player.velocityY = 0;
+                this.player.setState('FALLING');
             }
 
             this.updateProgress(100, text.gameStarts);
-            await new Promise(resolve => setTimeout(resolve, 300)); // Kurze Pause, damit der User 100% sieht
+            await new Promise(resolve => setTimeout(resolve, 300)); 
 
-            // Setzt den Startzeitpunkt für die erste DeltaTime-Berechnung korrekt.
-            this.isGameOver = false; // JETZT das Spiel als "aktiv" markieren.
+            this.isGameOver = false;
             this.lastTime = performance.now();
             this.animationFrameId = requestAnimationFrame(this.gameLoop.bind(this));
 
@@ -390,8 +416,10 @@ export class Game {
      * @returns {void}
      */
     addEnemy(): void {
-        if (this.selectedTheme) {
-            this.enemies.push(new Enemy(this.gameWidth, this.gameHeight, this.selectedTheme.enemyAsset));
+        if (this.selectedTheme && this.currentLevel) {
+            const speedBehavior = this.currentLevel.enemyBehavior;
+            const visualAsset = this.selectedTheme.enemyBehavior;
+            this.enemies.push(new Enemy(this.gameWidth, this.gameHeight, speedBehavior, visualAsset));
         }
     }
 
@@ -456,7 +484,7 @@ export class Game {
                      
                     
                     if (this.selectedTheme) {
-                        const destruction = this.selectedTheme.enemyAsset.destruction;
+                        const destruction = this.selectedTheme.enemyBehavior.destruction;
                         this.particles.push(new Particle(
                             enemy.x + enemy.width / 2,
                             enemy.y + enemy.height / 2,
@@ -489,33 +517,37 @@ export class Game {
      * @returns {void}
      */
     showEndScreen(): void {
-        // Versteckt den "Next Level"-Button, da die Funktion nicht implementiert ist.
-        const nextLevelButton = document.getElementById('next-level-button');
+        const nextLevelButton = document.getElementById('next-level-button') as HTMLButtonElement;
+        const endScreenBox = this.endScreenOverlay.querySelector('.end-screen-box');
+
         if (nextLevelButton) {
-            nextLevelButton.style.display = 'none';
+            nextLevelButton.style.display = 'none'; // Standardmäßig ausblenden
+            nextLevelButton.disabled = true;
         }
 
-        if (!this.selectedTheme) return;
+        const nextLevelExists = levels.some(lvl => lvl.levelNumber === this.currentLevelNumber + 1);
+        if (nextLevelButton && nextLevelExists) {
+            nextLevelButton.style.display = 'inline-block'; // Oder 'block', je nach Styling
+            nextLevelButton.disabled = false;
+        }
 
-        // Entfernt alte Nachrichten, falls das Spiel neugestartet wurde.
-        const existingContent = this.endScreenOverlay.querySelector('#end-screen-text-container');
+        if (!this.selectedTheme || !this.currentLevel || !endScreenBox) return;
+
+        const existingContent = endScreenBox.querySelector('#end-screen-text-container');
         if (existingContent) {
             existingContent.remove();
         }
 
-        // Erstellt einen Container für die Texte, um sie zu zentrieren und zu stylen.
         const textContainer = document.createElement('div');
         textContainer.id = 'end-screen-text-container';
         Object.assign(textContainer.style, {
-            position: 'absolute',
             color: 'white',
             textAlign: 'center',
             textShadow: '3px 3px 6px rgba(0,0,0,0.7)',
-            zIndex: '10', // Stellt sicher, dass der Text über dem Video liegt.
-            fontFamily: 'Arial, sans-serif'
+            fontFamily: 'Arial, sans-serif',
+            margin: '20px 0' // Platz zwischen Video und Buttons
         });
 
-        // Erstellt die "Gut gemacht!"-Nachricht.
         const messageElement = document.createElement('h2');
         messageElement.innerText = text.winMessage;
         Object.assign(messageElement.style, {
@@ -524,7 +556,6 @@ export class Game {
             padding: '0'
         });
 
-        // Erstellt die Punkteanzeige.
         const scoreElement = document.createElement('p');
         scoreElement.innerText = text.finalScore(this.score);
         Object.assign(scoreElement.style, {
@@ -532,12 +563,16 @@ export class Game {
             margin: '20px 0 0 0'
         });
 
-        // Fügt die Elemente zum Container und den Container zum Overlay hinzu.
         textContainer.appendChild(messageElement);
         textContainer.appendChild(scoreElement);
-        this.endScreenOverlay.appendChild(textContainer);
 
-        // Bestehender Code zum Anzeigen des Overlays.
+        const buttonContainer = endScreenBox.querySelector('.button-container');
+        if (buttonContainer) {
+            endScreenBox.insertBefore(textContainer, buttonContainer);
+        } else {
+            endScreenBox.appendChild(textContainer);
+        }
+
         this.endScreenOverlay.style.backgroundImage = `url(${this.selectedTheme.backgroundImageSrc})`;
         this.winVideo.src = this.selectedTheme.winVideoSrc;
         this.winVideo.play();
